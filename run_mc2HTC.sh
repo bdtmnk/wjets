@@ -1,6 +1,6 @@
 
 
-wdir="/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test"
+wdir="/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test"
 cd  $wdir; eval `scramv1 runtime -sh`
 channel=$2 
 

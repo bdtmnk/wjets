@@ -118,17 +118,17 @@ if (Suffix == "RunF")  Weight = "gen_weight*PU_weightRunF*LSF_weight*trig_weight
      //	      	if (channel=="Wenu") suffix = "_WenuNewIDnoJet";
 
 	//TString directory = "/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/Wmnu/backupMoriondOfficialPU/";
-	TString directory = "/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/Wmnu/";
+	TString directory = "/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test/Wmnu/";
 
     if (channel=="Wenu"){
-        directory = "/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/Wenu/";
+        directory = "/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test/Wenu/";
     }
 
    ////// check for existance
   cout << "start check "<< channel << endl;
   TString FileToWrite;
-   if (channel=="Wmnu") FileToWrite = "/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/WmnuPlots/RootWithWeightsMay"+Suffix+"/PlotsWmnuWithWeight_"+Variable+".root";
-   if (channel=="Wenu") FileToWrite = "/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/RootWithWeights"+Suffix+"/PlotsWenuWithWeight_"+Variable+".root";
+   if (channel=="Wmnu") FileToWrite = "/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test/WmnuPlots/RootWithWeightsMay"+Suffix+"/PlotsWmnuWithWeight_"+Variable+".root";
+   if (channel=="Wenu") FileToWrite = "/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/RootWithWeights"+Suffix+"/PlotsWenuWithWeight_"+Variable+".root";
   TFile * fileW = new TFile(FileToWrite);
   TH1F * check = NULL; 
   check = (TH1F * ) fileW->Get("data_obs_"+Variable+suffix);
@@ -890,8 +890,8 @@ DY->Scale(EWweight);
     FixOverlay();
     canv1->Update();
     pads[0]->GetFrame()->Draw();
-       	  if (channel=="Wmnu") canv1->Print("/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/WmnuPlots/"+Variable+Suffix+suffix+"May.pdf");
-       	  if (channel=="Wenu") canv1->Print("/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/"+Variable+Suffix+suffix+".pdf");
+       	  if (channel=="Wmnu") canv1->Print("/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test/WmnuPlots/"+Variable+Suffix+suffix+"May.pdf");
+       	  if (channel=="Wenu") canv1->Print("/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/"+Variable+Suffix+suffix+".pdf");
 
 	TFile *Target = TFile::Open (FileToWrite, "update");    
 	
