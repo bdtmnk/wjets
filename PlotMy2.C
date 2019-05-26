@@ -76,14 +76,14 @@ void PlotMy2(
 
 
 
-      cout << Variable<<endl;
+cout << Variable<<endl;
 	  TString DataFile1; 
 	  TString DataFile2;
 
    	if (channel=="Wmnu") 
 	{
-           DataFile1 = "SingleMuon_Run2017F";//-31Mar2018";
-	   DataFile2 = "SingleMuon_Run2017F";//-31Mar2018";	
+	   DataFile1 = "SingleMuon_Run2017F";
+	   DataFile2 = "SingleMuon_Run2017F";
 	}
 
    	if (channel=="Wenu") 
@@ -117,36 +117,45 @@ if (Suffix == "RunF")  Weight = "gen_weight*PU_weightRunF*LSF_weight*trig_weight
       	if (channel=="Wenu") suffix = "_WenuNewID";
      //	      	if (channel=="Wenu") suffix = "_WenuNewIDnoJet";
 
-	//TString directory = "/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/Wmnu/backupMoriondOfficialPU/";
-	TString directory = "/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test/Wmnu/";
+	//TString directory = "/nfs/dust/cms/user/bobovnii/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/Wmnu/backupMoriondOfficialPU/";
+	TString directory = "/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/Wmnu/";
+      	if (channel=="Wenu") directory = "/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/Wenu/";
 
-    if (channel=="Wenu"){
-        directory = "/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test/Wenu/";
-    }
-
-   ////// check for existance
+////// check for existance 
   cout << "start check "<< channel << endl;
   TString FileToWrite;
-   if (channel=="Wmnu") FileToWrite = "/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test/WmnuPlots/RootWithWeightsMay"+Suffix+"/PlotsWmnuWithWeight_"+Variable+".root";
-   if (channel=="Wenu") FileToWrite = "/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/RootWithWeights"+Suffix+"/PlotsWenuWithWeight_"+Variable+".root";
+   if (channel=="Wmnu") FileToWrite = "/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/WmnuPlots/RootWithWeightsMay"+Suffix+"/PlotsWmnuWithWeight_"+Variable+".root";
+   if (channel=="Wenu") FileToWrite = "/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/RootWithWeights"+Suffix+"/PlotsWenuWithWeight_"+Variable+".root";
   TFile * fileW = new TFile(FileToWrite);
   TH1F * check = NULL; 
   check = (TH1F * ) fileW->Get("data_obs_"+Variable+suffix);
   cout << "check = " << check << endl;
   //if (check != NULL) exit(1);
-  bool logY = false;
-  bool blindData = false;
+
+
+
+
+
+
+	bool logY = false;
+  	  bool blindData = false;
   float QCDscale=1.00;
-  bool NewMCmethod = false;
-  //Run F
-  //weightIsoEW = 0.93139 weightIsoQCD = 1.19217
-  //weightIsoEW = 0.930434 weightIsoQCD = 0.70528
-  float  EWweight = 0.930434;
-  float QCDweight = 0.70528;
+
+  bool NewMCmethod = true;
+
+//Run F
+
+ //weightIsoEW = 0.93139 weightIsoQCD = 1.19217
+//weightIsoEW = 0.930434 weightIsoQCD = 0.70528
+float  EWweight = 0.930434; 
+float QCDweight = 0.70528;
 
 if (Suffix == "RunF") {
+	
 	 EWweight = 0.93139;
 	QCDweight = 1.19217;
+
+
 }
 // RunBCDE
 
@@ -175,10 +184,12 @@ if (Suffix == "RunF") {
   //double lumi = 41290; // for test BCDE isoMu24
   // for RunF 
   //| HLT_IsoMu24_v10                                                                | 34    | 82   | 49069 | 11.531            | 10.979           |
-  //| HLT_IsoMu24_v11                                                                | 2     | 13   | 4469  | 0.896
+//| HLT_IsoMu24_v11                                                                | 2     | 13   | 4469  | 0.896
   
   //double lumi = 37836;
-
+  
+  
+  
   double lumi = 37836-10979-896; //runBCDE 
     if (Suffix == "RunF")  lumi = 10979+896; //run F
 
@@ -189,107 +200,80 @@ if (Suffix == "RunF") {
   TString topweight2("");
   TString topweight("topptweight*");
   //  TString topweight2("topptweight*topptweight*");
+
   //  TString qcdweight("2.02*");
   TString qcdweight("qcdweight*");
   TString zptmassweight("zptmassweight*");
   //  TString qcdweight("(qcdweight*qcdweight/qcdweightup)*");
   //  TString qcdweight("qcdweight_nodzeta*");
 
-    TString sampleNames[35] = {
+  TString sampleNames[25] = {
     DataFile1, // data (0)
     DataFile2, // data (0)
-        /*
-	"DY1JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8" //1
-	"DY2JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8"
-	"DY3JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8"
-	"DY4JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8"
-	"DY1JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8" //1
-	"DY2JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8"
-	"DY3JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8"
-	"DY4JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8"
-	*/
- 	"DYJetsToLL_M-5to50_13TeV-12Apr2018",//DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8", //1
-	"W1JetsToLNu_TuneCP5_13TeV-12Apr2018",
-	"W2JetsToLNu_TuneCP5_13TeV-12Apr2018",
-	"W3JetsToLNu_TuneCP5_13TeV-12Apr2018",
-	"W4JetsToLNu_TuneCP5_13TeV-12Apr2018",
-	"WJetsToLNu_TuneCP5_13TeV-12Apr2018",
-	"ST_t-channel_top_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8",
-	"ST_t-channel_antitop_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8",
-	"ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8",
-	"ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8", //10
-	"WW_TuneCP5_13TeV-pythia8",
-	"WZ_TuneCP5_13TeV-pythia8",
-	"ZZ_TuneCP5_13TeV-pythia8",
-//	"GJet_Pt-40toInf_DoubleEMEnriched_MGG-80toInf_TuneCP5_13TeV_Pythia8",
-	"TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8",
-	"TTToHadronic_TuneCP5_13TeV-powheg-pythia8",
-	"TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8",	
-	
-	//"QCD_Pt-1000toInf_MuEnrichedPt5_TuneCP5_13TeV_pythia8", //18
-	//"QCD_Pt-120to170_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
-//	"QCD_Pt-170to300_MuEnrichedPt5_TuneCP5_13TeV_pythia",
-//	"QCD_Pt-20to30_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
-//	"QCD_Pt-300to470_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
-//	"QCD_Pt-30to50_MuEnrichedPt5_TuneCP5_13TeV_pythia8", //23
-//	"QCD_Pt-470to600_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
- //   "QCD_Pt-50to80_MuEnrichedPt5_TuneCP5_13TeV_pythia8", 
- //   "QCD_Pt-600to800_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
-//	"QCD_Pt-800to1000_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
-//	"QCD_Pt-80to120_MuEnrichedPt5_TuneCP5_13TeV_pythia8",//27
-	
-	
-//	"QCD_Pt-1000toInf_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
-//	"QCD_Pt-120to170_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
-//	"QCD_Pt-170to300_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
-//	"QCD_Pt-20to30_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
-//	"QCD_Pt-300to470_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
-//	"QCD_Pt-30to50_MuEnrichedPt5_TuneCP5_13TeV_pythia8", //23
-//	"QCD_Pt-470to600_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
-//	"QCD_Pt-50to80_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
-//	"QCD_Pt-600to800_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
-//	"QCD_Pt-800to1000_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
-//	"QCD_Pt-80to120_MuEnrichedPt5_TuneCP5_13TeV_pythia8",//27
-    
+	"DYJetsToLL_M-50_13TeV-12Apr2018", //2
+	"W1JetsToLNu_TuneCP5_13TeV-12Apr2018",//3
+	"W2JetsToLNu_TuneCP5_13TeV-12Apr2018",//4
+	"W3JetsToLNu_TuneCP5_13TeV-12Apr2018",//5
+	"W4JetsToLNu_TuneCP5_13TeV-12Apr2018",//6
+	"WJetsToLNu_TuneCP5_13TeV-12Apr2018",//7
+	"ST_t-channel_top_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8",//8
+	"ST_t-channel_antitop_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8",//9
+	"ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8",//10
+	"ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8", //11
+	"WW_TuneCP5_13TeV-pythia8",//12
+	"WZ_TuneCP5_13TeV-pythia8",//13
+	"ZZ_TuneCP5_13TeV-pythia8",//14/
+	"TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8",//15
+	"TTToHadronic_TuneCP5_13TeV-powheg-pythia8",//16
+	"TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8",//17
+	"QCD_Pt-1000toInf_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
+	//18
+	"QCD_Pt-120to170_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
+	//19
+	"QCD_Pt-170to300_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
+	//20
+	"QCD_Pt-300to470_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
+	//21
+	"QCD_Pt-470to600_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
+	//22
+	"QCD_Pt-50to80_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
+	//23
+	"QCD_Pt-600to800_MuEnrichedPt5_TuneCP5_13TeV_pythia8_RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1_MINIAODSIM",
+    //24
   };
 
 
-  double xsec[35] = {1, // data (0)
+  double xsec[25] = {1, // data (0)
 			1, // data (0)
-		    5765,  // DY(50) (1)
-		    1.221*9644.5, //W1 (19)
-			1.221*3144.5, //W1 (20)
-			1.221*954.8,  //W1 (21)
-			1.221*485.6,  //W1 (22)
-			61526.7,// WJets (3)
-//		     TTnorm*831.76,  // TT  (4)
-		    136.02, // ST_t-channel_top (5)
-		    80.95,  // ST_t-channel_antitop (6)
-		    35.6,           // ST_tW_antitop (7)
-		    35.6,           // ST_tW_top_5f (8)
+		    5765,  // DY(50) (2)
+		    1.221*9644.5, //W1 (3)
+			1.221*3144.5, //W1 (4)
+			1.221*954.8,  //W1 (5)
+			1.221*485.6,  //W1 (6)
+			61526.7,// WJets (7)
+		    136.02, // ST_t-channel_top (8)
+		    80.95,  // ST_t-channel_antitop (9)
+		    35.6,           // ST_tW_antitop (10)
+		    35.6,           // ST_tW_top_5f (11)
 
-		    63.21, //WW
-		    47.13, // WZ
-		    16.523, //ZZ
+		    63.21, //WW//12
+		    47.13, // WZ//13
+		    16.523, //ZZ//14
 
-	    	//16792*0.0514, // GJet
-		    364.4,
-	        380.1,
-	        87.31, //TT
-//             720648000.0*0.00042,  // QCD        (18)
-//		   10.4305*0.15544, //QCD
-//		   469797*0.05362,
-//		   117989*0.07335,
-//		   558528000*0.0053,
-//		   7820.25*0.10196,
-//		   139803000*0.01182,
-//		   645.528*0.12242,
-//		   19222500*0.02276,
-//		   187.109*0.13412,
-//		   32.3486*0.14552,
-//		   2758420*0.03844,
-//		   0   // dummy
-  };     
+		364.4, //15
+	  380.1,//16
+	  87.31, //TT17
+
+		10.4305*0.15544, //QCD 18
+		469797*0.05362,//19
+		117989*0.07335,//20
+		7820.25*0.10196,//21
+		645.528*0.12242,//22
+		187.109*0.13412,//23
+		32.3486*0.14552,//24
+
+  };
+
 
 
 /* 10.4305 0.15544
@@ -399,11 +383,12 @@ if (Suffix == "RunF") {
 // for Data
 	  //if (channel=="Wmnu")  Cuts = "fabs(mu_charge[0])==1  && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 && nbtag<0.5  ";
 
-    cuts[0] = "(met_flag>0.5 && fabs(mu_charge[0])==1  && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5  )";
+  cuts[0] = "(met_flag>0.5 && fabs(mu_charge[0])==1  && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5  )";
 
-    cuts[1] = "(met_flag>0.5 && fabs(mu_charge[0])==1  && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5  )";
-    // for Wjets
+  cuts[1] = "(met_flag>0.5 && fabs(mu_charge[0])==1  && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5  )";
+// for Wjets
     cuts[7] = Weight+"("+Cuts+" &&(npartons==0||npartons>4))";
+
 
 
    	if (channel=="Wenu") 
@@ -443,23 +428,13 @@ if (Suffix == "RunF") {
 
   for (int i=0; i<nSamples; ++i) {
     //    std::cout << sampleNames[i] << std::endl;
-
-//if (i==10 || i==15) continue;
-// 
-   if (i>=18) continue; 
-    cout<<"Sample Name"<<sampleNames[i]<<endl;
-    cout<<"Index: "<<i <<endl;
-    try{
-    	TFile * file = new TFile(directory+sampleNames[i]+".root");
-	}
-    catch(std::runtime_error){
-	continue;
-	}
+    cout<<"Iteration: "<<i<<endl;
+    if (i>24) continue;
     TFile * file = new TFile(directory+sampleNames[i]+".root");
     if (i>1) file = new TFile(directory+sampleNames[i]+".root");
     TH1D * histWeightsH;
     TTree * tree; 
-	cout<<directory+sampleNames[i]+".root"<<endl;
+
    	histWeightsH = (TH1D*)file->Get("Wmnu/histWeightsH");
     	tree = (TTree*)file->Get("Wmnu/T");
 /*
@@ -583,7 +558,7 @@ if (MCDataDriven)
 	canv1 = new TCanvas("c1"+sampleNames[i], "c1"+sampleNames[i]);
 	canv1->cd();
 	hist[i]->Draw();
-	canv1->Print("/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/TEST"+sampleNames[i]+".pdf");
+	canv1->Print("/nfs/dust/cms/user/bobovnii/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/TEST"+sampleNames[i]+".pdf");
 */
 
 
@@ -619,46 +594,36 @@ cout<<"da"<<endl;
   WJ->Add(WJ,hist[5]);cout<<sampleNames[5]<<endl;
   WJ->Add(WJ,hist[6]);cout<<sampleNames[6]<<endl;
   WJ->Add(WJ,hist[7]);cout<<sampleNames[7]<<endl;
-
-  cout<<"WJ Finish"<<endl;
   //TH1D * TT  = (TH1D*)hist[5]->Clone("TT_"+Variable+suffix);cout<<sampleNames[5]<<endl;
   TH1D * VV  = (TH1D*)hist[12]->Clone("VV_"+Variable+suffix);cout<<sampleNames[12]<<endl;
   VV->Add(VV,hist[13]);cout<<sampleNames[13]<<endl;
   VV->Add(VV,hist[14]);cout<<sampleNames[14]<<endl;
-//  VV->Add(VV,hist[15]);cout<<sampleNames[15]<<endl;
 
-  cout<<"WW Finish"<<endl;
-  TH1D * TT  = (TH1D*)hist[15]->Clone("TT_"+Variable+suffix);cout<<sampleNames[15]<<endl;
-  cout<<"WW Finish"<<endl;
-  cout<<sampleNames[16]<<endl;
-  TT->Add(TT,hist[16]);cout<<sampleNames[16]<<endl;
-  cout<<"WW Finish"<<endl;
-  TT->Add(TT,hist[17]);cout<<sampleNames[17]<<endl;
-  cout<<"TT Finish"<<endl;
+  TH1D * TT  = (TH1D*)hist[15]->Clone("TT_"+Variable+suffix);cout<<sampleNames[16]<<endl;
+  TT->Add(TT,hist[16]);cout<<sampleNames[17]<<endl;
+  TT->Add(TT,hist[17]);cout<<sampleNames[18]<<endl;
+
   TH1D * ST  = (TH1D*)hist[8]->Clone("ST_"+Variable+suffix);cout<<sampleNames[8]<<endl;
   ST->Add(ST,hist[9]);cout<<sampleNames[9]<<endl;
   ST->Add(ST,hist[10]);cout<<sampleNames[10]<<endl;
   ST->Add(ST,hist[11]);cout<<sampleNames[11]<<endl;
-   cout<<"ST Finish"<<endl;
   TH1D * QCD;
-   cout<<"QCD Finish"<<endl; 
+  
 if (!NewMCmethod)
 {
   histInvIso[0]->Add(histInvIso[1],1);
 if (MCDataDriven)  histInvMT[0]->Add(histInvMT[1],1);
 if (MCDataDriven)  histInvMTandIso[0]->Add(histInvMTandIso[1],1);
 
-cout<<"QCD troubles"<<endl;
+
   for (int i=2; i<(nSamples); ++i) 
-	
-	{ if (i>=18)continue;
-	cout<<"da"<<endl;
+	{cout<<"da"<<endl;
 	histInvIso[0]->Add(histInvIso[i],-1);
-        if (MCDataDriven)	histInvMT[0]->Add(histInvMT[i],-1);
-        if (MCDataDriven)	histInvMTandIso[0]->Add(histInvMTandIso[i],-1);
+if (MCDataDriven)	histInvMT[0]->Add(histInvMT[i],-1);
+if (MCDataDriven)	histInvMTandIso[0]->Add(histInvMTandIso[i],-1);
 	 
 	}
-cout<<"QCD troubles"<<endl;
+
 QCD  = (TH1D*)histInvIso[0]->Clone("QCD_"+Variable+suffix);
 if (MCDataDriven)QCD->Scale(histInvMT[0]->GetSumOfWeights()/histInvMTandIso[0]->GetSumOfWeights());
 
@@ -668,17 +633,14 @@ if (!MCDataDriven)QCD->Scale(QCDscale);
 
 if (NewMCmethod)
 {
-QCD  = (TH1D*)hist[19]->Clone("QCD_"+Variable+suffix);
+QCD  = (TH1D*)hist[18]->Clone("QCD_"+Variable+suffix);
+QCD->Add(QCD,hist[19]);
 QCD->Add(QCD,hist[20]);
 QCD->Add(QCD,hist[21]);
 QCD->Add(QCD,hist[22]);
 QCD->Add(QCD,hist[23]);
 QCD->Add(QCD,hist[24]);
-QCD->Add(QCD,hist[25]);
-QCD->Add(QCD,hist[26]);
-QCD->Add(QCD,hist[27]);
-QCD->Add(QCD,hist[28]);
-QCD->Add(QCD,hist[29]);
+
 	
 QCD->Scale(QCDweight);
 ST->Scale(EWweight);
@@ -890,8 +852,8 @@ DY->Scale(EWweight);
     FixOverlay();
     canv1->Update();
     pads[0]->GetFrame()->Draw();
-       	  if (channel=="Wmnu") canv1->Print("/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test/WmnuPlots/"+Variable+Suffix+suffix+"May.pdf");
-       	  if (channel=="Wenu") canv1->Print("/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_5/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/"+Variable+Suffix+suffix+".pdf");
+       	  if (channel=="Wmnu") canv1->Print("/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/testWmnuPlots/"+Variable+Suffix+suffix+"May.pdf");
+       	  if (channel=="Wenu") canv1->Print("/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/"+Variable+Suffix+suffix+".pdf");
 
 	TFile *Target = TFile::Open (FileToWrite, "update");    
 	
