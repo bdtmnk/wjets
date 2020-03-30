@@ -20,41 +20,39 @@
 
 void PlotMy2Weights(TString Variable = "mu_relIso[0]",
                     TString Suffix = "_Moriond17",
-	                int nBins  =   100,
-	                float xmin =    0,
-	                float xmax =  0.5,
-	                TString xtitle = "iso",
-  	                bool NormalMetForData = false,
-	                TString channel = "Wmnu",
-	                TString Run="ABCD")
+                    int nBins  =   100,
+                    float xmin =    0,
+                    float xmax =  0.5,
+                    TString xtitle = "iso",
+                    bool NormalMetForData = false,
+                    TString channel = "Wmnu",
+                    TString Run="ABCD")
     {
-      cout << Variable<<endl;
+
+
 	  TString DataFile1; 
 	  TString DataFile2;
 	  TString DataFile3;
 	  TString DataFile4;
-
-
+	  TString DataFile5;
+	  TString DataFile6;
+	  TString DataFile7;
 
    	if (channel=="Wmnu") {
 
-	   DataFile1 = "SingleMuon_Run2018A-17Sep2018-v2";
-       DataFile2 = "SingleMuon_Run2018B-17Sep2018-v1";
-       DataFile3 = "SingleMuon_Run2018C-17Sep2018-v1";
-       DataFile4 = "SingleMuon_Run2018D-22Jan2019-v2";
-
+       DataFile1 = "SingleMuon_Run2018B";
+       DataFile2 = "SingleMuon_Run2018A";
+       DataFile3 = "SingleMuon_Run2018C";
+       DataFile4 = "SingleMuon_Run2018D-22Jan2019-v2_0_";
+       DataFile5 = "SingleMuon_Run2018D-22Jan2019-v2_1_";
+       DataFile6 = "SingleMuon_Run2018D-22Jan2019-v2_2_";
+       DataFile7 = "SingleMuon_Run2018D_22Jan2019-v2_-1";
 	}
 
-   	if (channel=="Wenu") 
-	{
-	   DataFile1 = "SingleElectron_RunBCDE";
-	   DataFile2 = "SingleElectron__Run2017F-17Nov2017-v1";
-	}
-
+  TString directory = "/nfs/dust/cms/user/dydukhle/STAU/METStudy/CMSSW_10_2_15_patch2/src/DesyTauAnalyses/NTupleMaker/test/Wmnu_new/";
 	TString Weight = "gen_weight*PUweight*LSF_weight*trig_weight*";
-
-	TString MT = "MT";
-    TString Cuts;
+  TString MT = "MT";
+  TString Cuts;
 
 	if (Variable.Contains("puppi_pt")) MT = "MTpuppi";
 	if (Variable.Contains("met") && Variable.Contains("smeared")) MT = "MT_smeared";
@@ -63,114 +61,91 @@ void PlotMy2Weights(TString Variable = "mu_relIso[0]",
 
 	if (channel=="Wmnu")  Cuts = "mu_pt[0]>29 && fabs(mu_charge[0])==1 && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5";
 
-	if (channel=="Wenu")  Cuts = "fabs(el_charge[0])==1 && el_relIso[0] < 0.05 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 && nbtag<0.5    ";
-
-    TString ytitle = "Events";
-    TString suffix = "_Wmnu";
+  TString ytitle = "Events";
+  TString suffix = "_Wmnu";
     
-    if (channel=="Wenu") suffix = "_WenuNewID";
-    TString directory = "/nfs/dust/cms/user/dydukhle/STAU/METStudy/CMSSW_10_2_15_patch2/src/DesyTauAnalyses/NTupleMaker/test/Wmnu/";
+  if (channel=="Wenu") suffix = "_WenuNewID";
 
-    if (channel=="Wenu") directory = "/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_10/src/DesyTauAnalyses/NTupleMaker/test/Wenu/";
+  TString FileToWrite;
+  if (channel=="Wmnu") FileToWrite = "/nfs/dust/cms/user/dydukhle/STAU/METStudy/CMSSW_10_2_15_patch2/src/DesyTauAnalyses/NTupleMaker/test/WmnuPlots/RootWithWeights/"+Run+"/"+Variable+".root";
+  TFile * fileW = new TFile(FileToWrite);
+  TH1F * check = NULL;
+  check = (TH1F * ) fileW->Get("data_obs_"+Variable+suffix);
 
-    TString FileToWrite;
-    if (channel=="Wmnu") FileToWrite = "/nfs/dust/cms/user/dydukhle/STAU/METStudy/CMSSW_10_2_15_patch2/src/DesyTauAnalyses/NTupleMaker/test/WmnuPlots/RootWithWeights/"+Variable+".root";
-    if (channel=="Wenu") FileToWrite = "/nfs/dust/cms/user/dydukhle/METstudy/CMSSW_9_4_0_patch1/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/RootWithWeights/"+Variable+".root";
-    TFile * fileW = new TFile(FileToWrite);
-    TH1F * check = NULL;
-    check = (TH1F * ) fileW->Get("data_obs_"+Variable+suffix);
+  bool logY = false;
+  TString isLog;
+  if (logY) isLog ="Log";
+  if (logY==false) isLog ="NonLog";
+  bool blindData = false;
+  float QCDscale = 1.00;
+  int nbMin = 4;
+  int nbMax = 11;
+  bool plotLeg = true;
+  int position = 0;
+  bool showSignal = true;
+  int nSamples = 34;
+  if (channel=="Wenu") nSamples = 29;
 
-    bool logY = false;
-    bool blindData = false;
-    float QCDscale = 1.00;
-    int nbMin = 4;
-    int nbMax = 11;
-    bool plotLeg = true;
-    int position = 0;
-    bool showSignal = true;
-    int nSamples = 32;
-    if (channel=="Wenu") nSamples = 29;
+  TH1::SetDefaultSumw2();
+  TH2::SetDefaultSumw2();
 
-    TH1::SetDefaultSumw2();
-    TH2::SetDefaultSumw2();
+  //Lumi Settings:
+  double lumi;
+  if (Run == "A") {lumi = 13480;}
+  else if (Run=="B"){lumi= 6785;}
+  else if (Run=="C"){lumi= 6612;}
+  else if (Run=="D"){lumi=58822.126 - (13480+6785+6612);}
+  else if(Run=="ABC"){lumi = 13480+6785+6612;}
+  else{lumi = 58822.126;}
 
-    //Lumi Settings:
-    double lumi;
-    if (Run == "A") {
-        lumi = 13480;
-    }
-    else if (Run=="B"){
-        lumi= 6785;
-    }
-    else if (Run=="C"){
-        lumi= 6612;
-    }
-    else if (Run=="D"){
-        lumi=0;
-    }
-    else if(Run=="ABC"){
-        lumi = 13480+6785+6612;
-    }
-    else{
-        lumi = 58822.126;
-    }
+  double TTnorm = 1.0;
+  double Wnorm  = 1.0;
 
-    double TTnorm = 1.0;
-    double Wnorm  = 1.0;
+  TString topweight2("");
+  TString topweight("topptweight*");
+  TString zptmassweight("zptmassweight*");
+  TString qcdweight("(qcdweight*qcdweight/qcdweightup)*");
 
-    TString topweight2("");
-    TString topweight("topptweight*");
-    TString zptmassweight("zptmassweight*");
-    TString qcdweight("(qcdweight*qcdweight/qcdweightup)*");
-
-    TString sampleNames[32] = {
+  TString sampleNames[35] = {
 
          DataFile1, // data (0)
+        "DYJetsToLL_M-50_new",//1
+        "W1JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8_",//2
+        "W2JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8_",//3
+        "W3JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8_",//4
+        "W4JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8_",//5
+        "WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8_",//6
+        "ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",//7
+        "ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",//8
+        "ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8",//9
+        "ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8", //10
+        "WW_TuneCP5_13TeV-pythia8",//11
+        "WZ_TuneCP5_13TeV-pythia8",//12
+        "ZZ_TuneCP5_13TeV-pythia8",//13
+        "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8",//14
+        "TTToHadronic_TuneCP5_13TeV-powheg-pythia8",//15
+        "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8",//16
+        "QCD_Pt-1000toInf",//17
+        "QCD_Pt-120to170",//18
+        "QCD_Pt-170to300",//19
+        "QCD_Pt-20to30",//20
+        "QCD_Pt-300to470",//21
+        "QCD_Pt-30to50",//22
+        "QCD_Pt-470to600",//23
+        "QCD_Pt-50to80",//24
+        "QCD_Pt-600to800",//25
+        "QCD_Pt-800to1000",//26
+        "QCD_Pt-80to120",//27
+        DataFile2,//28
+        DataFile3,//29
+        DataFile4,//30
+        DataFile5,//31
+        DataFile6,//32
+        DataFile7//33
 
-        "DYJetsToLL_M-50",
-  
-        "W1JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8_",//3
-        "W2JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8_",//4
-        "W3JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8_",//5
-        "W4JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8_",//6
-        "WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8_",//7
-
-        "ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",//8
-        "ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",//9
-        "ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8",//10
-        "ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8", //11
-
-        "WW_TuneCP5_13TeV-pythia8",//12
-        "WZ_TuneCP5_13TeV-pythia8",//13
-        "ZZ_TuneCP5_13TeV-pythia8",//14/
-
-        "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8",//15
-        "TTToHadronic_TuneCP5_13TeV-powheg-pythia8",//16
-        "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8",
-
-        "QCD_Pt-1000toInf",//18
-        "QCD_Pt-120to170",//19
-
-        "QCD_Pt-170to300",//20
-        "QCD_Pt-20to30",//21
-
-        "QCD_Pt-300to470",//22
-        "QCD_Pt-30to50",//23
-
-        "QCD_Pt-470to600",//24
-        "QCD_Pt-50to80",//25
-
-        "QCD_Pt-600to800",//26
-
-        "QCD_Pt-800to1000",//27
-        "QCD_Pt-80to120",//28
-
-        DataFile2,
-        DataFile3,
-        DataFile4,
       };
 
-    double xsec[32] = {
+    double xsec[35] = {
 
       1, // Single Muon data (1)
       2075.14*3 , ////5765,  // DY(50) (2)
@@ -210,7 +185,9 @@ void PlotMy2Weights(TString Variable = "mu_relIso[0]",
       1,//30
       1,//31
       1,//32
-
+      1,//33
+      1,//34
+      1//35
     };
 
   TString cuts[35];
@@ -219,7 +196,7 @@ void PlotMy2Weights(TString Variable = "mu_relIso[0]",
   TString cutsInvMTandIso[35];
 
   for (int i=0; i<35; ++i) {
-
+    
     cuts[i] = Weight+"("+Cuts+")";
     cutsInvIso[i] = Weight+"(mu_pt[0]>29 && fabs(mu_charge[0])==1 && mu_relIso[0] > 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5    )";
     cutsInvMT[i] = Weight+"(mu_pt[0]>29 && fabs(mu_charge[0])==1 && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    )";
@@ -228,30 +205,23 @@ void PlotMy2Weights(TString Variable = "mu_relIso[0]",
   }
 
   // For Data
-  if (Variable.Contains("smeared")) MT = "MT";
-for (int j=0; j<32;j++){
+  for (int j=0; j<35;j++){
 
-  if (j==0||j>=28){
-  cuts[j] = "(mu_pt[0]>29 && met_flag>0.5 && fabs(mu_charge[0])==1 && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5    )";
-  cutsInvIso[j] = "(mu_pt[0]>29 && met_flag>0.5 && fabs(mu_charge[0])==1 && mu_relIso[0] > 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5    )";
-  cutsInvMT[j] = "(mu_pt[0]>29 && met_flag>0.5 && fabs(mu_charge[0])==1 && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    )";
-  cutsInvMTandIso[j] = "(mu_pt[0]>29 && met_flag>0.5 && fabs(mu_charge[0])==1 && mu_relIso[0] > 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    )";
+  	if (j==0||j>=28){
+  		cuts[j] = "(mu_pt[0]>29 && met_flag>0.5 && fabs(mu_charge[0])==1 && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5    )";
+  		cutsInvIso[j] = "(mu_pt[0]>29 && met_flag>0.5 && fabs(mu_charge[0])==1 && mu_relIso[0] > 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5    )";
+  		cutsInvMT[j] = "(mu_pt[0]>29 && met_flag>0.5 && fabs(mu_charge[0])==1 && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    )";
+  		cutsInvMTandIso[j] = "(mu_pt[0]>29 && met_flag>0.5 && fabs(mu_charge[0])==1 && mu_relIso[0] > 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    )";
 
-}
-}
+  	}
+  }
+  // For Wjets
+  cuts[6] = Weight+"("+Cuts+" &&(npartons==0||npartons>4))";
+  cutsInvIso[6] = Weight+"(mu_pt[0]>29 && fabs(mu_charge[0])==1 && mu_relIso[0] > 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5    &&(npartons==0||npartons>4) )";
+  cutsInvMT[6] = Weight+"(mu_pt[0]>29 && fabs(mu_charge[0])==1 && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    &&(npartons==0||npartons>4) )";
+  cutsInvMTandIso[6] = Weight+"(mu_pt[0]>29 && fabs(mu_charge[0])==1 && mu_relIso[0] > 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    &&(npartons==0||npartons>4))";
 
-
-
-    if (Variable.Contains("smeared")) MT = "MT_smeared";
-
-    // For Wjets
-
-    cuts[6] = Weight+"("+Cuts+" &&(npartons==0||npartons>4))";
-    cutsInvIso[6] = Weight+"(mu_pt[0]>29 && fabs(mu_charge[0])==1 && mu_relIso[0] > 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5    &&(npartons==0||npartons>4) )";
-    cutsInvMT[6] = Weight+"(mu_pt[0]>29 && fabs(mu_charge[0])==1 && mu_relIso[0] < 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    &&(npartons==0||npartons>4) )";
-    cutsInvMTandIso[6] = Weight+"(mu_pt[0]>29 && fabs(mu_charge[0])==1 && mu_relIso[0] > 0.15 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    &&(npartons==0||npartons>4))";
-
-	if (channel=="Wenu"){
+	  if (channel=="Wenu"){
 
 		for (int i=0; i<30; ++i) {
             cuts[i] = Weight+"("+Cuts+")";
@@ -260,23 +230,19 @@ for (int j=0; j<32;j++){
             cutsInvMTandIso[i] = Weight+"(fabs(el_charge[0])==1 && el_relIso[0] > 0.05 && el_relIso[0] < 0.06 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    )";
          }
 
-    // For Data
-	for (int j=0; j<32;j++){
+        // For Data
+  	for (int j=0; j<35;j++){
 
-	if (j==0||j>=28){ 
-		if (Variable.Contains("smeared")) MT = "MT";
-		cuts[j] = "(met_flag>0.5 && fabs(el_charge[0])==1 && el_relIso[0] < 0.05 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5    )";
-		cutsInvIso[j] = "(met_flag>0.5 && fabs(el_charge[0])==1 && el_relIso[0] > 0.05 && el_relIso[0] < 0.06 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5    )";
-		cutsInvMT[j] = "(met_flag>0.5 && fabs(el_charge[0])==1 && el_relIso[0] < 0.05 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    )";
-		cutsInvMTandIso[j] = "(met_flag>0.5 && fabs(el_charge[0])==1 && el_relIso[0] > 0.05 && el_relIso[0] < 0.06 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    )";
+    	if (j==0||j>=28){ 
+    		cuts[j] = "(mu_pt[0]>29 && met_flag>0.5 && fabs(el_charge[0])==1 && el_relIso[0] < 0.05 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5    )";
+    		cutsInvIso[j] = "(mu_pt[0]>29 && met_flag>0.5 && fabs(el_charge[0])==1 && el_relIso[0] > 0.05 && el_relIso[0] < 0.06 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5    )";
+    		cutsInvMT[j] = "(mu_pt[0]>29 && met_flag>0.5 && fabs(el_charge[0])==1 && el_relIso[0] < 0.05 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    )";
+    		cutsInvMTandIso[j] = "(mu_pt[0]>29 && met_flag>0.5 && fabs(el_charge[0])==1 && el_relIso[0] > 0.05 && el_relIso[0] < 0.06 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    )";
 
-}
-}
-
-
-    // for Wjets
-  	if (Variable.Contains("smeared")) MT = "MT_smeared"; //////?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-   	    cuts[6] = Weight+"("+Cuts+" &&(npartons==0||npartons>4))";
+      }
+    }
+      // for Wjets  	
+      cuts[6] = Weight+"("+Cuts+" &&(npartons==0||npartons>4))";
     	cutsInvIso[6] = Weight+"(mu_pt[0]>29 && fabs(el_charge[0])==1 && el_relIso[0] > 0.05 && el_relIso[0] < 0.06 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5  && nbtag<0.5    &&(npartons==0||npartons>4) )";
     	cutsInvMT[6] = Weight+"(mu_pt[0]>29 && fabs(el_charge[0])==1 && el_relIso[0] < 0.05 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    &&(npartons==0||npartons>4) )";
     	cutsInvMTandIso[6] = Weight+"(mu_pt[0]>29 && fabs(el_charge[0])==1 && el_relIso[0] > 0.05 && el_relIso[0] < 0.06 && event_secondLeptonVeto < 0.5 && event_thirdLeptonVeto < 0.5 &&  nbtag<0.5    &&(npartons==0||npartons>4))";
@@ -288,82 +254,67 @@ for (int j=0; j<32;j++){
   TH1D * histInvMTandIso[35];
 
   TCanvas * dummyCanv = new TCanvas("dummy","",500,500);
-   ///////filling histograms
-
   for (int i=0; i<nSamples; ++i) {
-    if (Run == "A"){
-        if(i>=28)continue;
-    }
-    else if(Run == "B"){
-        if(i==0||i>29)continue;
-    }
-    else if(Run == "C"){
-        if(i==0||i==1)continue;
-    }
-    else if(Run == "D"){
-        if(i==0||i==1||i==29)continue;
-    }
-    else if(Run=="ABC"){
-        if(i>28)continue;
-    }
-    std::cout << sampleNames[i] << std::endl;
-    cout<<"Iteration: "<<i<<endl;
-    TFile * file = new TFile(directory+sampleNames[i]+".root");
-    TH1D * histWeightsH;
-    TTree * tree;
+      if (Run == "A"){if(i>=28)continue;}
+      else if(Run == "B"){if(i>=28)continue;}
+      else if(Run == "C"){if(i>=28)continue;}
+      else if(Run == "D"){if(i>=28)continue;}
+      else if(Run=="ABC"){if(i>=30)continue;}
+      std::cout << sampleNames[i] << std::endl;
+      cout<<"Iteration: "<<i<<endl;
+      TFile * file = new TFile(directory+sampleNames[i]+".root");
+      TH1D * histWeightsH;
+      TTree * tree;
 
-    histWeightsH = (TH1D*)file->Get("Wmnu/histWeightsH");
-    tree = (TTree*)file->Get("Wmnu/T");
+      histWeightsH = (TH1D*)file->Get("Wmnu/histWeightsH");
+      tree = (TTree*)file->Get("Wmnu/T");
+      cout << "sampleNames[i]  "<<sampleNames[i] <<endl;
+      cout << "xsec[i]"<<xsec[i]<< endl;
+      cout << "lumi"<<lumi<< endl;
+      cout << "histWeightsH->GetSumOfWeights()"<<histWeightsH->GetSumOfWeights()<< endl;
 
-    cout << "sampleNames[i]  "<<sampleNames[i] <<endl;
-    cout << "xsec[i]"<<xsec[i]<< endl;
-    cout << "lumi"<<lumi<< endl;
-    cout << "histWeightsH->GetSumOfWeights()"<<histWeightsH->GetSumOfWeights()<< endl;
+      double norm = xsec[i]*lumi/histWeightsH->GetSumOfWeights();
+      TString Variable2;
 
-    double norm = xsec[i]*lumi/histWeightsH->GetSumOfWeights();
-    TString Variable2;
+      TString histName = sampleNames[i] + Variable + "_";
+      TString histNameInvIso = sampleNames[i] + Variable + "_InvIso";
+      TString histNameInvMT = sampleNames[i] + Variable + "_InvMT";
+      TString histNameInvMTandIso = sampleNames[i] + Variable + "_InvMTandIso";
 
-    TString histName = sampleNames[i] + Variable + "_";
-    TString histNameInvIso = sampleNames[i] + Variable + "_InvIso";
-    TString histNameInvMT = sampleNames[i] + Variable + "_InvMT";
-    TString histNameInvMTandIso = sampleNames[i] + Variable + "_InvMTandIso";
+      hist[i] = new TH1D(histName,"",nBins,xmin,xmax);
+      hist[i]->Sumw2();
+      histInvIso[i] = new TH1D(histNameInvIso,"",nBins,xmin,xmax);
+      histInvIso[i]->Sumw2();
+      histInvMT[i] = new TH1D(histNameInvMT,"",nBins,xmin,xmax);
+      histInvMT[i]->Sumw2();
+      histInvMTandIso[i] = new TH1D(histNameInvMTandIso,"",nBins,xmin,xmax);
+      histInvMTandIso[i]->Sumw2();
 
-    hist[i] = new TH1D(histName,"",nBins,xmin,xmax);
-    hist[i]->Sumw2();
-    histInvIso[i] = new TH1D(histNameInvIso,"",nBins,xmin,xmax);
-    histInvIso[i]->Sumw2();
-    histInvMT[i] = new TH1D(histNameInvMT,"",nBins,xmin,xmax);
-    histInvMT[i]->Sumw2();
-    histInvMTandIso[i] = new TH1D(histNameInvMTandIso,"",nBins,xmin,xmax);
-    histInvMTandIso[i]->Sumw2();
-
-    tree->Draw(Variable+">>"+histNameInvIso,cutsInvIso[i]);
-    tree->Draw(Variable+">>"+histNameInvMT,cutsInvMT[i]);
-    tree->Draw(Variable+">>"+histNameInvMTandIso,cutsInvMTandIso[i]);
-    tree->Draw(Variable+">>"+histName,cuts[i]);
-	
-	cout << "hist[i]->GetSumOfWeights()  "<<hist[i]->GetSumOfWeights()<< endl;
-	cout << "histInvIso[i]->GetSumOfWeights()  "<<histInvIso[i]->GetSumOfWeights()<< endl;
-	cout << "histInvMT[i]->GetSumOfWeights()  "<<histInvMT[i]->GetSumOfWeights()<< endl;
-	cout << "histInvMTandIso[i]->GetSumOfWeights()  "<<histInvMTandIso[i]->GetSumOfWeights()<< endl;
+      tree->Draw(Variable+">>"+histNameInvIso,cutsInvIso[i]);
+      tree->Draw(Variable+">>"+histNameInvMT,cutsInvMT[i]);
+      tree->Draw(Variable+">>"+histNameInvMTandIso,cutsInvMTandIso[i]);
+      tree->Draw(Variable+">>"+histName,cuts[i]);
+  	
+      cout << "hist[i]->GetSumOfWeights()  "<<hist[i]->GetSumOfWeights()<< endl;
+      cout << "histInvIso[i]->GetSumOfWeights()  "<<histInvIso[i]->GetSumOfWeights()<< endl;
+      cout << "histInvMT[i]->GetSumOfWeights()  "<<histInvMT[i]->GetSumOfWeights()<< endl;
+      cout << "histInvMTandIso[i]->GetSumOfWeights()  "<<histInvMTandIso[i]->GetSumOfWeights()<< endl;
 
     if (i>1 &&i<28) {
       for (int iB=1; iB<=nBins; ++iB) {
 
-	     double x = histInvIso[i]->GetBinContent(iB);
-	    double e = histInvIso[i]->GetBinError(iB);
-    	histInvIso[i]->SetBinContent(iB,norm*x);
-    	histInvIso[i]->SetBinError(iB,norm*e);
+    	    double x = histInvIso[i]->GetBinContent(iB);
+    	    double e = histInvIso[i]->GetBinError(iB);
+        	histInvIso[i]->SetBinContent(iB,norm*x);
+        	histInvIso[i]->SetBinError(iB,norm*e);
 
-	    x = hist[i]->GetBinContent(iB);
-	    e = hist[i]->GetBinError(iB);
-    	hist[i]->SetBinContent(iB,norm*x);
-    	hist[i]->SetBinError(iB,norm*e);
-      }
+    	    x = hist[i]->GetBinContent(iB);
+    	    e = hist[i]->GetBinError(iB);
+        	hist[i]->SetBinContent(iB,norm*x);
+        	hist[i]->SetBinError(iB,norm*e);
+          }
+        }
     }
-
-
-  }
 
   delete dummyCanv;
 
@@ -371,11 +322,18 @@ for (int j=0; j<32;j++){
   
   //TODO Set different Run Trigger;
   histData = (TH1D*)hist[0]->Clone("data_obs_"+Variable+suffix);cout<<sampleNames[0]<<endl;
-  
-  for (int j=28; j<32;j++){
-  	histData->Add(histData,hist[j]);cout<<sampleNames[j]<<endl;
-   }
-
+  if (Run=="ABC"){
+	histData->Add(histData,hist[28]);cout<<sampleNames[28]<<endl;
+	histData->Add(histData,hist[29]);cout<<sampleNames[29]<<endl;
+  }
+  if(Run=="ABCD"){ 
+histData->Add(histData,hist[28]);cout<<sampleNames[28]<<endl;
+histData->Add(histData,hist[29]);cout<<sampleNames[29]<<endl;
+histData->Add(histData,hist[30]);cout<<sampleNames[30]<<endl;
+histData->Add(histData,hist[31]);cout<<sampleNames[31]<<endl;
+histData->Add(histData,hist[32]);cout<<sampleNames[32]<<endl;
+histData->Add(histData,hist[33]);cout<<sampleNames[33]<<endl;
+ }
   cout<<"Hist Data:"<< histData->GetSumOfWeights()<<endl;
 
   TH1D * DY = (TH1D*)hist[1]->Clone("DY_"+Variable+suffix);cout<<sampleNames[2]<<endl;
@@ -412,15 +370,15 @@ for (int j=0; j<32;j++){
 
   for (int i=2; i<(17); ++i)
 	{
-	cout<<"EWK Iteration: "<<i<<endl;
-	EW->Add(hist[i],1);
-	EWInvIso->Add(histInvIso[i],1);
-	cout<<sampleNames[i]<<endl;
-	cout<<sampleNames[i]+"  :"<<endl;
-	cout<<"Sum Of W: "<<hist[i]->GetSumOfWeights()<<endl;
-        cout<<"Inv Iso: "<<histInvIso[i]->GetSumOfWeights()<<endl;
-	EWInvMT->Add(histInvMT[i],1);
-	EWInvMTandIso->Add(histInvMTandIso[i],1);
+  	cout<<"EWK Iteration: "<<i<<endl;
+  	EW->Add(hist[i],1);
+  	EWInvIso->Add(histInvIso[i],1);
+  	cout<<sampleNames[i]<<endl;
+  	cout<<sampleNames[i]+"  :"<<endl;
+  	cout<<"Sum Of W: "<<hist[i]->GetSumOfWeights()<<endl;
+          cout<<"Inv Iso: "<<histInvIso[i]->GetSumOfWeights()<<endl;
+  	EWInvMT->Add(histInvMT[i],1);
+  	EWInvMTandIso->Add(histInvMTandIso[i],1);
 	}
   for (int i=18; i<28; ++i)
 	{
@@ -452,12 +410,12 @@ for (int j=0; j<32;j++){
         fDataInvIso = histInvIso[0]->GetSumOfWeights();
    }
    else if(Run=="B"){
-        fData = hist[1]->GetSumOfWeights();
-        fDataInvIso = histInvIso[1]->GetSumOfWeights();
+        fData = hist[0]->GetSumOfWeights();
+        fDataInvIso = histInvIso[0]->GetSumOfWeights();
    }
    else if(Run=="C"){
-        fData = hist[29]->GetSumOfWeights();
-        fDataInvIso = histInvIso[29]->GetSumOfWeights();
+        fData = hist[0]->GetSumOfWeights();
+        fDataInvIso = histInvIso[0]->GetSumOfWeights();
    }
    else if(Run=="D"){
         fData = hist[30]->GetSumOfWeights()+ hist[31]->GetSumOfWeights() + hist[32]->GetSumOfWeights();
@@ -465,22 +423,26 @@ for (int j=0; j<32;j++){
 
    }
    else if(Run=="ABC"){
-        fData = hist[0]->GetSumOfWeights();
-               + hist[1]->GetSumOfWeights()
+        fData = hist[0]->GetSumOfWeights()
+               + hist[28]->GetSumOfWeights()
                + hist[29]->GetSumOfWeights();
 
-        fDataInvIso = histInvIso[0]->GetSumOfWeights();
-                     + histInvIso[1]->GetSumOfWeights()
+        fDataInvIso = histInvIso[0]->GetSumOfWeights()
+                     + histInvIso[28]->GetSumOfWeights()
                      + histInvIso[29]->GetSumOfWeights();
 
         }
    else{
-        fData = hist[0]->GetSumOfWeights() + hist[29]->GetSumOfWeights() + hist[30]->GetSumOfWeights() + hist[31]->GetSumOfWeights() + hist[28]->GetSumOfWeights();
+        fData = hist[0]->GetSumOfWeights() + hist[28]->GetSumOfWeights() 
+              + hist[29]->GetSumOfWeights() + hist[30]->GetSumOfWeights() 
+              + hist[31]->GetSumOfWeights() + hist[32]->GetSumOfWeights() 
+              + hist[33]->GetSumOfWeights();
 
-        fDataInvIso = histInvIso[0]->GetSumOfWeights()  + histInvIso[29]->GetSumOfWeights() + histInvIso[30]->GetSumOfWeights() + histInvIso[31]->GetSumOfWeights() + histInvIso[28]->GetSumOfWeights();
+        fDataInvIso = histInvIso[0]->GetSumOfWeights()  + histInvIso[28]->GetSumOfWeights() 
+              + histInvIso[29]->GetSumOfWeights() + histInvIso[30]->GetSumOfWeights()
+              + histInvIso[31]->GetSumOfWeights() + histInvIso[32]->GetSumOfWeights() 
+              + histInvIso[33]->GetSumOfWeights();
         }
-
-
    float fDataInvIsoFull = fDataInvIso;
    float fDataFull = fData;
 
@@ -585,7 +547,7 @@ for (int j=0; j<32;j++){
     legend->AddEntry(WJ,"WJETS","f");
     legend->AddEntry(TT,"t#bar{t}","f");
     legend->AddEntry(DY,"DY","f");
-    //  leg->AddEntry(VV,"VV+VVV","f");
+    //legend->AddEntry(VV,"VV+VVV","f");
     legend->AddEntry(ST,"ST","f");
     legend->AddEntry(QCD,"QCD","f");
     legend->AddEntry(VV,"VV","f");
@@ -614,7 +576,6 @@ for (int j=0; j<32;j++){
     //float errMuon = 0.03;
     //float errElectron = 0.04;
     for (int iB=1; iB<=nBins; ++iB) {
-
         //QCD->SetBinError(iB,0);
         //VV->SetBinError(iB,0);
         //TT->SetBinError(iB,0);
@@ -628,7 +589,7 @@ for (int j=0; j<32;j++){
         //float eElectron = errElectron * X;
         //float eBkg = dummy->GetBinError(iB);
         //float Err = TMath::Sqrt(eStat*eStat+eLumi*eLumi+eBkg*eBkg+eMuon*eMuon+eElectron*eElectron);
-	    float Err = TMath::Sqrt(eStat*eStat);
+	      float Err = TMath::Sqrt(eStat*eStat);
         bkgdErr->SetBinError(iB,Err);
     }
 
@@ -678,8 +639,8 @@ for (int j=0; j<32;j++){
     
     FixTopRange(pads[0], GetPadYMax(pads[0]), 0.15);
     DrawCMSLogo(pads[0], "CMS", "Preliminary Run "+Run, 11, 0.045, 0.035, 1.2);
-    DrawTitle(pads[0], "58.8 fb^{-1} (13 TeV)", 3);
-   	if (channel=="Wmnu") DrawTitle(pads[0], "W to #mu#nu", 1);
+    DrawTitle(pads[0], to_string(lumi) + "fb^{-1} (13 TeV)", 3);
+    if (channel=="Wmnu") DrawTitle(pads[0], "W to #mu#nu", 1);
     if (channel=="Wenu") DrawTitle(pads[0], "W to e#nu", 1);
     FixBoxPadding(pads[0], legend, 0.05);
     legend->Draw();
@@ -687,15 +648,15 @@ for (int j=0; j<32;j++){
     canv1->Update();
     pads[0]->GetFrame()->Draw();
 
-	//TODO declare the global Path on the Top of the script;
+	  //TODO declare the global Path on the Top of the script;
     if (channel=="Wmnu"){
-    canv1->Print("/nfs/dust/cms/user/dydukhle/STAU/METStudy/CMSSW_10_2_15_patch2/src/DesyTauAnalyses/NTupleMaker/test/WmnuPlots/"+Run+"/" +Variable+Suffix+suffix+".pdf");
+        canv1->Print("/nfs/dust/cms/user/dydukhle/STAU/METStudy/CMSSW_10_2_15_patch2/src/DesyTauAnalyses/NTupleMaker/test/WmnuPlots/"+Run+isLog+"/" +Variable+Suffix+suffix+".pdf");
     }
     if (channel=="Wenu"){
-    canv1->Print("/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_10/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/"+Run+"/"+Variable+Suffix+suffix+".pdf");
+        canv1->Print("/nfs/dust/cms/user/dydukhle/STAU/CMSSW_10_2_10/src/DesyTauAnalyses/NTupleMaker/test/WenuPlots/"+Run+"/"+Variable+Suffix+suffix+".pdf");
     }
 
-	TFile *Target = TFile::Open (FileToWrite, "update");    
+	  TFile *Target = TFile::Open (FileToWrite, "update");    
 	
     WJ->Write();
     TT->Write();
@@ -705,7 +666,7 @@ for (int j=0; j<32;j++){
     VV->Write();
     histData->Write();
 
-	Target->Write();
-	delete Target;
+  	Target->Write();
+  	delete Target;
 
 }
