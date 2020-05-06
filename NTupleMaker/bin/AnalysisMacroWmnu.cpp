@@ -2791,10 +2791,8 @@ int main(int argc, char * argv[]) {
      pfmet_ey_XY_JetEnUp = METXY.second;
      pfmet_pt_XY_JetEnUp = sqrt(pfmet_ex_XY_JetEnUp*pfmet_ex_XY_JetEnUp +
                                 pfmet_ey_XY_JetEnUp*pfmet_ey_XY_JetEnUp);
-     pfmet_phi_XY_JetEnUp = calculate_dphi(pfmet_ex_XY, pfmet_ey_XY);
-     //cout<<"pfmet_pt_XY_JetEnUp  :  "<<pfmet_pt_XY_JetEnUp<<endl;
-    // cout<<"pfmet_phi_XY_JetEnUp  :  "<<pfmet_phi_XY_JetEnUp<<endl;
-     //2 JetEnDown
+     pfmet_phi_XY_JetEnUp = calculate_dphi(pfmet_ex_XY_JetEnUp, pfmet_ey_XY_JetEnUp);
+     //2 JetEnDow
      METXY = METXYCorr_Met_MetPhi(pfmetcorr_pt_JetEnDown,
                                   pfmetcorr_phi_JetEnDown,
                                                            runnb,
