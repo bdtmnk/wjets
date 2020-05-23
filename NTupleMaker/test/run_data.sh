@@ -24,13 +24,12 @@
 #
 #mkdir $1
 
-cd  /nfs/dust/cms/user/alkaloge/TauAnalysis/new/new/StauAnalysis/CMSSW_8_0_20/src/DesyTauAnalyses/NTupleMaker/test; eval `scramv1 runtime -sh`
+cd  $PWD;
+eval `scramv1 runtime -sh`
 
 channel=$2 
 dir=$2
 
-
-#dir=InvMuIso
 
 if [ ! -d Jobs ]
 then
@@ -80,9 +79,6 @@ else
 fi
 
 fi
-
-
-
 
 
 done<$dir/$line
