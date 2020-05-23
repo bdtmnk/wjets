@@ -1,0 +1,1 @@
+scp dydukhle@naf-cms22.desy.de:/nfs/dust/cms/user/dydukhle/STAU/METStudy/CMSSW_10_2_15_patch2/src/DesyTauAnalyses/NTupleMaker/test/*syst.py

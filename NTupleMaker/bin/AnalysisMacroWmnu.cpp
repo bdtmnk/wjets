@@ -59,8 +59,8 @@ int main(int argc, char * argv[]) {
     //Configuration=====================================================
     Config cfg(argv[1]);
     string Channel="Wmnu";
-    bool usePuppiMET = false;
-    bool applySimpleRecoilCorrections = false;
+    bool usePuppiMET = true;
+    bool applySimpleRecoilCorrections = true;
     bool isSampleForRecoilCorrection = false;
     bool ApplyZptReweighting = false;
 
@@ -176,14 +176,12 @@ int main(int argc, char * argv[]) {
 
     //Vertex distributions filenames and histname
     //Golden Json:
-    const string jsonFile = cfg.get<string>("jsonFile");
+    const string _year = cfg.get<string>("year");
+    const string jsonFile = cfg.get<string>("jsonFile" + _year);
 
     string cmsswBase = (getenv ("CMSSW_BASE"));
     string fullPathToJsonFile = cmsswBase + "/src/DesyTauAnalyses/NTupleMaker/test/json/" + jsonFile;
  
-    //const string TauFakeRateFile = cfg.get<string>("TauFakeRateEff");
-    //Run-lumi selector
-
     std::vector<Period> periods;
 
 
@@ -254,7 +252,6 @@ int main(int argc, char * argv[]) {
       JetCorrectionUncertainty *unc = new JetCorrectionUncertainty(*p);
       vsrc_BBEC1Year[isrc] = unc;
    }
-
    map< TString , vector<JetCorrectionUncertainty*> > jec_unc_map = {
       { "jecUncEta0To5"     , vsrc_Eta0To5 },
       { "jecUncEta0To3"     , vsrc_Eta0To3 },
@@ -269,10 +266,7 @@ int main(int argc, char * argv[]) {
       { "jecUncBBEC1Year"   , vsrc_BBEC1Year }, 
    };
 
-
-
    // JER corrections and uncertainties (NEW) ==========================================================================================================================
-
    m_resolution_from_file.reset(new JME::JetResolution(cmsswBase+"/src/DesyTauAnalyses/NTupleMaker/data/JER/"+jer_resolution));
    m_scale_factor_from_file.reset(new JME::JetResolutionScaleFactor(cmsswBase+"/src/DesyTauAnalyses/NTupleMaker/data/JER/"+jer_scalefactor));
 
@@ -317,11 +311,14 @@ int main(int argc, char * argv[]) {
   //PU Reweighting======================================================
   PileUp * PUofficial = new PileUp();
 
-  //TODO 1 attach PU file to the config=================================
+
+  TString Pileup_file_name_data = cfg.get<string>("Pileup_file_name_data"+_year);
+  TString Pileup_file_name_mc = cfg.get<string>("Pileup_file_name_mc"+_year);
+
   TFile * filePUdistribution_data = new TFile(TString(cmsswBase) +
-		   "/src/DesyTauAnalyses/NTupleMaker/data/PileUpDistrib/pileUp_data_Autumn18.root","read");
+		   "/src/DesyTauAnalyses/NTupleMaker/data/PileUpDistrib/"+Pileup_file_name_data,"read");
   TFile * filePUdistribution_MC = new TFile (TString(cmsswBase) +
-			"/src/DesyTauAnalyses/NTupleMaker/data/PileUpDistrib/pileUp_MC_Autumn18.root", "read");
+			"/src/DesyTauAnalyses/NTupleMaker/data/PileUpDistrib/"+Pileup_file_name_mc, "read");
 
   TH1D * PU_data = (TH1D *)filePUdistribution_data->Get("pileup");
   TH1D * PU_mc = (TH1D *)filePUdistribution_MC->Get("pileup");
@@ -331,9 +328,8 @@ int main(int argc, char * argv[]) {
   bool SUSY = false;
 
   // B-tag==============================================================
-  // TODO attach B-tag file to the config
   string BTag_ = "central";
-  string BtagCVS = "DeepCSV_2017data.csv" ;
+  string BtagCVS = cfg.get<string>("BtagCVS");
 
   BTagCalibration calib("csvv2", cmsswBase+"/src/DesyTauAnalyses/NTupleMaker/data/"+BtagCVS);
   BTagCalibrationReader reader_B(BTagEntry::OP_MEDIUM,BTag_);
@@ -368,15 +364,14 @@ int main(int argc, char * argv[]) {
     }
   }
 
-
   float MaxBJetPt = 1000.;
   float MaxLJetPt = 1000.;
   float MinLJetPt = 20.;
   float MinBJetPt = 20.;
 
-  //TODO attach the tagging efficiencies to the config file:============
+  string filebTaggingEff = cfg.get<string>("filebTaggingEff");
   TFile * fileTagging = new TFile(TString(cmsswBase)+
-                        TString("/src/DesyTauAnalyses/NTupleMaker/data/tagging_efficiencies_march2018_btageff-all_samp-inc-DeepCSV_medium.root"));
+                                  TString("/src/DesyTauAnalyses/NTupleMaker/data/"+filebTaggingEff));
   TH1F * tagEff_B = (TH1F*)fileTagging->Get("btag_eff_b");
   TH1F * tagEff_C = (TH1F*)fileTagging->Get("btag_eff_c");
   TH1F * tagEff_Light = (TH1F*)fileTagging->Get("btag_eff_oth");
@@ -387,47 +382,43 @@ int main(int argc, char * argv[]) {
   cout<<"  Initializing iD SF files....."<<endl;
 
   ScaleFactor * SF_muonIdIso;
-
   if (applyLeptonSF) {
 
     SF_muonIdIso = new ScaleFactor();
     SF_muonIdIso->init_ScaleFactor(TString(cmsswBase)+"/src/"+TString(MuonidIsoEffFile));
 
   }
-
   cout<<"Reading of Trigger SF files:"<<endl;
 
   ScaleFactor * SF_muonTrigger = new ScaleFactor();
   SF_muonTrigger->init_ScaleFactor(TString(cmsswBase)+"/src/"+TString(MuontrigEffFile));
 
-
   //Recoil path:========================================================
-  cout<<"Reading Filenames"<<endl;
-  const string recoilFileName   = cfg.get<string>("RecoilFileName");
+  const string recoilFileName   = cfg.get<string>("RecoilFileName"+_year);
   TString RecoilFileName(recoilFileName);
 
-  const string recoilFileNamePuppi   = cfg.get<string>("RecoilFileNamePuppi");
+  const string recoilFileNamePuppi   = cfg.get<string>("RecoilFileNamePuppi"+_year);
   TString RecoilFileNamePuppi(recoilFileNamePuppi);
 
-  const string metSysFileName   = cfg.get<string>("MetSysFileName");
+  const string metSysFileName   = cfg.get<string>("MetSysFileName"+_year);
   TString MetSysFileName(metSysFileName);
 
-  const string metSysFileNamePuppi   = cfg.get<string>("MetSysFileNamePuppi");
+  const string metSysFileNamePuppi   = cfg.get<string>("MetSysFileNamePuppi"+_year);
   TString MetSysFileNamePuppi(metSysFileNamePuppi);
 
-  const string zMassPtWeightsFileName   = cfg.get<string>("ZMassPtWeightsFileName");
+  const string zMassPtWeightsFileName   = cfg.get<string>("ZMassPtWeightsFileName"+_year);
   TString ZMassPtWeightsFileName(zMassPtWeightsFileName);
    
   const string zMassPtWeightsHistName   = cfg.get<string>("ZMassPtWeightsHistName");
   TString ZMassPtWeightsHistName(zMassPtWeightsHistName);
 
-/*
-  const string zMassPtWeightsFileName   = cfg.get<string>("TopPtWeightsFileName");
-  TString ZMassPtWeightsFileName(zMassPtWeightsFileName);
+
+  const string TopPtWeightsFileName   = cfg.get<string>("TopPtWeightsFileName");
+  TString TopPtWeightsFileName(zMassPtWeightsFileName);
    
-  const string zMassPtWeightsHistName   = cfg.get<string>("TopPtWeightsHistName");
-  TString ZMassPtWeightsHistName(zMassPtWeightsHistName);
-*/
+  const string TopPtWeightsHistName   = cfg.get<string>("TopPtWeightsHistName");
+  TString TopPtWeightsHistName(zMassPtWeightsHistName);
+
 
   //Definition of the Corrector:========================================
   kit::MEtSys metSys(MetSysFileName);
@@ -435,7 +426,8 @@ int main(int argc, char * argv[]) {
   kit::MEtSys metSysPuppi(MetSysFileNamePuppi);
   kit::RecoilCorrector recoilMetCorrectorPuppi(RecoilFileNamePuppi);
 
-  cout<<"Start"<<endl;
+  cout<<" ended initialization here "<<endl;
+
 
   char ff[100];
   sprintf(ff,"%s/%s",argv[3],argv[2]);
@@ -476,34 +468,12 @@ int main(int argc, char * argv[]) {
   SetupTree();
 
   //Definition of the MT:======================================================================================
-
-  Float_t MT_JetEnUp_smeared;
-  Float_t MT_JetEnDown_smeared;
-  Float_t MT_UnclusteredEnUp_smeared;
-  Float_t MT_UnclusteredEnDown_smeared;
-  Float_t MT_JetResUp_smeared;
-  Float_t MT_JetResDown_smeared;
-
-  T->Branch("MT_JetEnUp_smeared", &MT_JetEnUp_smeared, "MT_JetEnUp_smeared/F");
-  T->Branch("MT_JetEnDown_smeared", &MT_JetEnDown_smeared, "MT_JetEnDown_smeared/F");
-  T->Branch("MT_UnclusteredEnUp_smeared", &MT_UnclusteredEnUp_smeared, "MT_UnclusteredEnUp_smeared/F");
-  T->Branch("MT_UnclusteredEnDown_smeared", &MT_UnclusteredEnDown_smeared, "MT_UnclusteredEnDown_smeared/F");
-  T->Branch("MT_JetResUp_smeared", &MT_JetResUp_smeared, "MT_JetResUp_smeared/F");
-  T->Branch("MT_JetResDown_smeared", &MT_JetResDown_smeared, "MT_JetResDown_smeared/F");
-
   Float_t MT_JetEnUp;
   Float_t MT_JetEnDown;
   Float_t MT_UnclusteredEnUp;
   Float_t MT_UnclusteredEnDown;
   Float_t MT_JetResUp;
   Float_t MT_JetResDown;
-
-  T->Branch("MT_JetEnUp", &MT_JetEnUp, "MT_JetEnUp/F");
-  T->Branch("MT_JetEnDown", &MT_JetEnDown, "MT_JetEnDown/F");
-  T->Branch("MT_UnclusteredEnUp", &MT_UnclusteredEnUp, "MT_UnclusteredEnUp/F");
-  T->Branch("MT_UnclusteredEnDown", &MT_UnclusteredEnDown, "MT_UnclusteredEnDown/F");
-  T->Branch("MT_JetResUp", &MT_JetResUp, "MT_JetResUp/F");
-  T->Branch("MT_JetResDown", &MT_JetResDown, "MT_JetResDown/F");
 
   Float_t MT_XY_JetEnUp;
   Float_t MT_XY_JetEnDown;
@@ -512,13 +482,6 @@ int main(int argc, char * argv[]) {
   Float_t MT_XY_JetResUp;
   Float_t MT_XY_JetResDown;
 
-  T->Branch("MT_XY_JetEnUp", &MT_XY_JetEnUp, "MT_XY_JetEnUp/F");
-  T->Branch("MT_XY_JetEnDown", &MT_XY_JetEnDown, "MT_XY_JetEnDown/F");
-  T->Branch("MT_XY_UnclusteredEnUp", &MT_XY_UnclusteredEnUp, "MT_XY_UnclusteredEnUp/F");
-  T->Branch("MT_XY_UnclusteredEnDown", &MT_XY_UnclusteredEnDown, "MT_XY_UnclusteredEnDown/F");
-  T->Branch("MT_XY_JetResUp", &MT_XY_JetResUp, "MT_XY_JetResUp/F");
-  T->Branch("MT_XY_JetResDown", &MT_XY_JetResDown, "MT_XY_JetResDown/F");
-
   Float_t MTpuppi;
   Float_t MTpuppi_JetEnUp;
   Float_t MTpuppi_JetEnDown;
@@ -526,6 +489,34 @@ int main(int argc, char * argv[]) {
   Float_t MTpuppi_UnclusteredEnDown;
   Float_t MTpuppi_JetResUp;
   Float_t MTpuppi_JetResDown;
+
+  Float_t MT_JetEnUp_smeared;
+  Float_t MT_JetEnDown_smeared;
+  Float_t MT_UnclusteredEnUp_smeared;
+  Float_t MT_UnclusteredEnDown_smeared;
+  Float_t MT_JetResUp_smeared;
+  Float_t MT_JetResDown_smeared;
+
+  T->Branch("MT_JetEnUp", &MT_JetEnUp, "MT_JetEnUp/F");
+  T->Branch("MT_JetEnDown", &MT_JetEnDown, "MT_JetEnDown/F");
+  T->Branch("MT_UnclusteredEnUp", &MT_UnclusteredEnUp, "MT_UnclusteredEnUp/F");
+  T->Branch("MT_UnclusteredEnDown", &MT_UnclusteredEnDown, "MT_UnclusteredEnDown/F");
+  T->Branch("MT_JetResUp", &MT_JetResUp, "MT_JetResUp/F");
+  T->Branch("MT_JetResDown", &MT_JetResDown, "MT_JetResDown/F");
+
+  T->Branch("MT_JetEnUp_smeared", &MT_JetEnUp_smeared, "MT_JetEnUp_smeared/F");
+  T->Branch("MT_JetEnDown_smeared", &MT_JetEnDown_smeared, "MT_JetEnDown_smeared/F");
+  T->Branch("MT_UnclusteredEnUp_smeared", &MT_UnclusteredEnUp_smeared, "MT_UnclusteredEnUp_smeared/F");
+  T->Branch("MT_UnclusteredEnDown_smeared", &MT_UnclusteredEnDown_smeared, "MT_UnclusteredEnDown_smeared/F");
+  T->Branch("MT_JetResUp_smeared", &MT_JetResUp_smeared, "MT_JetResUp_smeared/F");
+  T->Branch("MT_JetResDown_smeared", &MT_JetResDown_smeared, "MT_JetResDown_smeared/F");
+
+  T->Branch("MT_XY_JetEnUp", &MT_XY_JetEnUp, "MT_XY_JetEnUp/F");
+  T->Branch("MT_XY_JetEnDown", &MT_XY_JetEnDown, "MT_XY_JetEnDown/F");
+  T->Branch("MT_XY_UnclusteredEnUp", &MT_XY_UnclusteredEnUp, "MT_XY_UnclusteredEnUp/F");
+  T->Branch("MT_XY_UnclusteredEnDown", &MT_XY_UnclusteredEnDown, "MT_XY_UnclusteredEnDown/F");
+  T->Branch("MT_XY_JetResUp", &MT_XY_JetResUp, "MT_XY_JetResUp/F");
+  T->Branch("MT_XY_JetResDown", &MT_XY_JetResDown, "MT_XY_JetResDown/F");
 
   T->Branch("MTpuppi", &MTpuppi, "MTpuppi/F");
   T->Branch("MTpuppi_JetEnUp", &MTpuppi_JetEnUp, "MTpuppi_JetEnUp/F");
@@ -563,39 +554,30 @@ int main(int argc, char * argv[]) {
 
   Float_t      puppi_ex_JetEnUp;
   Float_t      puppi_ey_JetEnUp;
-
   Float_t      puppi_ex_JetEnDown;
   Float_t      puppi_ey_JetEnDown;
-  
   Float_t      puppi_ex_UnclusteredEnUp;
   Float_t      puppi_ey_UnclusteredEnUp;
-  
   Float_t      puppi_ex_UnclusteredEnDown;
   Float_t      puppi_ey_UnclusteredEnDown;
-
   Float_t      puppi_ex_JetResUp;
-  Float_t      puppi_ey_JetResUp;
- 
+  Float_t      puppi_ey_JetResUp
   Float_t      puppi_ex_JetResDown;
   Float_t      puppi_ey_JetResDown;
 
   //Systematic for the Puppi Pt:
   Float_t puppi_pt_JetEnUp;
   Float_t puppi_pt_JetEnDown;
-
   Float_t puppi_pt_UnclusteredEnUp;
   Float_t puppi_pt_UnclusteredEnDown;
-  
   Float_t puppi_pt_JetResUp;
   Float_t puppi_pt_JetResDown;
 
   //Systematic for the Puppi Phi
   Float_t puppi_phi_JetEnUp;
   Float_t puppi_phi_JetEnDown;
-
   Float_t puppi_phi_UnclusteredEnUp;
   Float_t puppi_phi_UnclusteredEnDown;
-  
   Float_t puppi_phi_JetResUp;
   Float_t puppi_phi_JetResDown;
 
@@ -607,13 +589,10 @@ int main(int argc, char * argv[]) {
 
   T->Branch("puppi_ex_JetEnUp", &puppi_ex_JetEnUp, "puppi_ex_JetEnUp/F");
   T->Branch("puppi_ey_JetEnUp", &puppi_ey_JetEnUp, "puppi_ey_JetEnUp/F");
-
   T->Branch("puppi_ex_JetEnDown", &puppi_ex_JetEnDown, "puppi_ex_JetEnDown/F");
   T->Branch("puppi_ey_JetEnDown", &puppi_ey_JetEnDown, "puppi_ey_JetEnDown/F");
-  
   T->Branch("puppi_ex_UnclusteredEnUp", &puppi_ex_UnclusteredEnUp, "puppi_ex_UnclusteredEnUp/F");
   T->Branch("puppi_ey_UnclusteredEnUp", &puppi_ey_UnclusteredEnUp, "puppi_ey_UnclusteredEnUp/F");
-  
   T->Branch("puppi_ex_UnclusteredEnDown", &puppi_ex_UnclusteredEnDown, "puppi_ex_UnclusteredEnDown/F");
   T->Branch("puppi_ey_UnclusteredEnDown", &puppi_ey_UnclusteredEnDown, "puppi_ey_UnclusteredEnDown/F");
 
@@ -655,26 +634,21 @@ int main(int argc, char * argv[]) {
 
    Float_t      pfmet_ex_JetEnDown;
    Float_t      pfmet_ey_JetEnDown;
-   
+
    Float_t      pfmet_ex_UnclusteredEnUp;
    Float_t      pfmet_ey_UnclusteredEnUp;
-   
    Float_t      pfmet_ex_UnclusteredEnDown;
    Float_t      pfmet_ey_UnclusteredEnDown;
-
    Float_t      pfmet_ex_JetResUp;
    Float_t      pfmet_ey_JetResUp;
-   
    Float_t      pfmet_ex_JetResDown;
    Float_t      pfmet_ey_JetResDown;
-
    Float_t      pfmet_pt_JetEnUp;
    Float_t      pfmet_pt_JetEnDown;
    Float_t      pfmet_pt_UnclusteredEnUp;
    Float_t      pfmet_pt_UnclusteredEnDown;
    Float_t      pfmet_pt_JetResUp;
    Float_t      pfmet_pt_JetResDown;
-
    Float_t      pfmet_phi_JetEnUp;
    Float_t      pfmet_phi_JetEnDown;
    Float_t      pfmet_phi_UnclusteredEnUp;
@@ -690,19 +664,16 @@ int main(int argc, char * argv[]) {
     //JetEnUp
     T->Branch("pfmet_ex_JetEnUp", &pfmet_ex_JetEnUp, "pfmet_ex_JetEnUp/F");
     T->Branch("pfmet_ey_JetEnUp", &pfmet_ey_JetEnUp, "pfmet_ey_JetEnUp/F");
- 
     T->Branch("pfmet_ex_JetEnDown", &pfmet_ex_JetEnDown, "pfmet_ex_JetEnDown/F");
     T->Branch("pfmet_ey_JetEnDown", &pfmet_ey_JetEnDown, "pfmet_ey_JetEnDown/F");
     //JetRes
     T->Branch("pfmet_ex_JetResUp", &pfmet_ex_JetResUp, "pfmet_ex_JetResUp/F");
     T->Branch("pfmet_ey_JetResUp", &pfmet_ey_JetResUp, "pfmet_ey_JetResUp/F");
-
     T->Branch("pfmet_ex_JetResDown", &pfmet_ex_JetResDown, "pfmet_ex_JetResDown/F");
     T->Branch("pfmet_ey_JetResDown", &pfmet_ey_JetResDown, "pfmet_ey_JetResDown/F");
     //Unclustered
     T->Branch("pfmet_ex_UnclusteredEnUp", &pfmet_ex_UnclusteredEnUp, "pfmet_ex_UnclusteredEnUp/F");
     T->Branch("pfmet_ey_UnclusteredEnUp", &pfmet_ey_UnclusteredEnUp, "pfmet_ey_UnclusteredEnUp/F");
- 
     T->Branch("pfmet_ex_UnclusteredEnDown", &pfmet_ex_UnclusteredEnDown, "pfmet_ex_UnclusteredEnDown/F");
     T->Branch("pfmet_ey_UnclusteredEnDown", &pfmet_ey_UnclusteredEnDown, "pfmet_ey_UnclusteredEnDown/F");
     //Unc for the pfmet pt:
@@ -748,18 +719,15 @@ int main(int argc, char * argv[]) {
     Float_t pfmetcorr_pt_JetEnUp;
     Float_t pfmetcorr_phi_JetEnUp;
 
-
     Float_t pfmetcorr_ex_JetEnDown;
     Float_t pfmetcorr_ey_JetEnDown;
     Float_t pfmetcorr_pt_JetEnDown;
     Float_t pfmetcorr_phi_JetEnDown;
 
-
     Float_t pfmetcorr_ex_UnclusteredEnUp;
     Float_t pfmetcorr_ey_UnclusteredEnUp;
     Float_t pfmetcorr_pt_UnclusteredEnUp;
     Float_t pfmetcorr_phi_UnclusteredEnUp;
-
 
     Float_t pfmetcorr_ex_UnclusteredEnDown;
     Float_t pfmetcorr_ey_UnclusteredEnDown;
@@ -771,43 +739,35 @@ int main(int argc, char * argv[]) {
     Float_t pfmetcorr_pt_JetResUp;
     Float_t pfmetcorr_phi_JetResUp;
 
-
     Float_t pfmetcorr_ex_JetResDown;
     Float_t pfmetcorr_ey_JetResDown;
     Float_t pfmetcorr_pt_JetResDown;
     Float_t pfmetcorr_phi_JetResDown;
-
-
 
     T->Branch("pfmetcorr_ex_JetEnUp", &pfmetcorr_ex_JetEnUp, "pfmetcorr_ex_JetEnUp/F");
     T->Branch("pfmetcorr_ey_JetEnUp", &pfmetcorr_ey_JetEnUp, "pfmetcorr_ey_JetEnUp/F");
     T->Branch("pfmetcorr_pt_JetEnUp", &pfmetcorr_pt_JetEnUp, "pfmetcorr_pt_JetEnUp/F");
     T->Branch("pfmetcorr_phi_JetEnUp", &pfmetcorr_phi_JetEnUp, "pfmetcorr_phi_JetEnUp/F");
 
-
     T->Branch("pfmetcorr_ex_JetEnDown", &pfmetcorr_ex_JetEnDown, "pfmetcorr_ex_JetEnDown/F");
     T->Branch("pfmetcorr_ey_JetEnDown", &pfmetcorr_ey_JetEnDown, "pfmetcorr_ey_JetEnDown/F");
     T->Branch("pfmetcorr_pt_JetEnDown", &pfmetcorr_pt_JetEnDown, "pfmetcorr_pt_JetEnDown/F");
     T->Branch("pfmetcorr_phi_JetEnDown", &pfmetcorr_phi_JetEnDown, "pfmetcorr_phi_JetEnDown/F");
-
 
     T->Branch("pfmetcorr_ex_UnclusteredEnUp", &pfmetcorr_ex_UnclusteredEnUp, "pfmetcorr_ex_UnclusteredEnUp/F");
     T->Branch("pfmetcorr_ey_UnclusteredEnUp", &pfmetcorr_ey_UnclusteredEnUp, "pfmetcorr_ey_UnclusteredEnUp/F");
     T->Branch("pfmetcorr_pt_UnclusteredEnUp", &pfmetcorr_pt_UnclusteredEnUp, "pfmetcorr_pt_UnclusteredEnUp/F");
     T->Branch("pfmetcorr_phi_UnclusteredEnUp", &pfmetcorr_phi_UnclusteredEnUp, "pfmetcorr_phi_UnclusteredEnUp/F");
 
-
     T->Branch("pfmetcorr_ex_UnclusteredEnDown", &pfmetcorr_ex_UnclusteredEnDown, "pfmetcorr_ex_UnclusteredEnDown/F");
     T->Branch("pfmetcorr_ey_UnclusteredEnDown", &pfmetcorr_ey_UnclusteredEnDown, "pfmetcorr_ey_UnclusteredEnDown/F");
     T->Branch("pfmetcorr_pt_UnclusteredEnDown", &pfmetcorr_pt_UnclusteredEnDown, "pfmetcorr_pt_UnclusteredEnDown/F");
     T->Branch("pfmetcorr_phi_UnclusteredEnDown", &pfmetcorr_phi_UnclusteredEnDown, "pfmetcorr_phi_UnclusteredEnDown/F");
 
-
     T->Branch("pfmetcorr_ex_JetResUp", &pfmetcorr_ex_JetResUp, "pfmetcorr_ex_JetResUp/F");
     T->Branch("pfmetcorr_ey_JetResUp", &pfmetcorr_ey_JetResUp, "pfmetcorr_ey_JetResUp/F");
     T->Branch("pfmetcorr_pt_JetResUp", &pfmetcorr_pt_JetResUp, "pfmetcorr_pt_JetResUp/F");
     T->Branch("pfmetcorr_phi_JetResUp", &pfmetcorr_phi_JetResUp, "pfmetcorr_phi_JetResUp/F");
-
 
     T->Branch("pfmetcorr_ex_JetResDown", &pfmetcorr_ex_JetResDown, "pfmetcorr_ex_JetResDown/F");
     T->Branch("pfmetcorr_ey_JetResDown", &pfmetcorr_ey_JetResDown, "pfmetcorr_ey_JetResDown/F");
@@ -867,9 +827,6 @@ int main(int argc, char * argv[]) {
     T->Branch("pfmet_pt_XY_JetResDown", &pfmet_pt_XY_JetResDown, "pfmet_pt_XY_JetResDown/F");
     T->Branch("pfmet_phi_XY_JetResDown", &pfmet_phi_XY_JetResDown, "pfmet_phi_XYs_JetResDown/F");
 
-
-
-
     //Smeared:===============================================================================================
     Float_t      pfmet_ex_smeared;
     Float_t      pfmet_ey_smeared;
@@ -880,28 +837,20 @@ int main(int argc, char * argv[]) {
 
     Float_t      pfmet_ex_JetEnUp_smeared;
     Float_t      pfmet_ey_JetEnUp_smeared;
-
     Float_t      pfmet_ex_JetEnDown_smeared;
     Float_t      pfmet_ey_JetEnDown_smeared;
-    
     Float_t      pfmet_ex_UnclusteredEnUp_smeared;
     Float_t      pfmet_ey_UnclusteredEnUp_smeared;
-    
     Float_t      pfmet_ex_UnclusteredEnDown_smeared;
     Float_t      pfmet_ey_UnclusteredEnDown_smeared;
-    
     Float_t      pfmet_ex_JetResUp_smeared;
     Float_t      pfmet_ey_JetResUp_smeared;
-    
     Float_t      pfmet_ex_JetResDown_smeared;
     Float_t      pfmet_ey_JetResDown_smeared;
-
     Float_t      pfmet_pt_JetEnUp_smeared;
     Float_t      pfmet_pt_JetEnDown_smeared;
-    
     Float_t      pfmet_pt_UnclusteredEnUp_smeared;
     Float_t      pfmet_pt_UnclusteredEnDown_smeared;
-    
     Float_t      pfmet_pt_JetResUp_smeared;
     Float_t      pfmet_pt_JetResDown_smeared;
 
@@ -948,17 +897,15 @@ int main(int argc, char * argv[]) {
     Float_t raw_pfMT;
     Float_t raw_pfmet_ex;
     Float_t raw_pfmet_ey;
-
-    T->Branch("raw_dPhi",  &raw_dPhi, "raw_dPhi/F");
-    T->Branch("raw_pfMT", &raw_pfMT, "raw_pfMT/F");
-    T->Branch("raw_pfmet_ex", &raw_pfmet_ex, "raw_pfmet_ex/F");
-    T->Branch("raw_pfmet_ey", &raw_pfmet_ey, "raw_pfmet_ey/F");
-
     Float_t raw_dPhi_XY;
     Float_t raw_pfMT_XY;
     Float_t raw_pfmet_ex_XY;
     Float_t raw_pfmet_ey_XY;
 
+    T->Branch("raw_dPhi",  &raw_dPhi, "raw_dPhi/F");
+    T->Branch("raw_pfMT", &raw_pfMT, "raw_pfMT/F");
+    T->Branch("raw_pfmet_ex", &raw_pfmet_ex, "raw_pfmet_ex/F");
+    T->Branch("raw_pfmet_ey", &raw_pfmet_ey, "raw_pfmet_ey/F");
     T->Branch("raw_dPhi_XY",  &raw_dPhi_XY, "raw_dPhi_XY/F");
     T->Branch("raw_pfMT_XY", &raw_pfMT_XY, "raw_pfMT_XY/F");
     T->Branch("raw_pfmet_ex_XY", &raw_pfmet_ex_XY, "raw_pfmet_ex_XY/F");
@@ -973,57 +920,50 @@ int main(int argc, char * argv[]) {
     Float_t Ut;
     Float_t Utr;
     Float_t Ucol;
-    T->Branch("Ut", &Ut, "Ut/F");
-    T->Branch("Utr", &Utr, "Utr/F");
-    T->Branch("Ucol", &Ucol, "Ucol/F");
-
-
     Float_t Ut_JetEnUp;
     Float_t Utr_JetEnUp;
     Float_t Ucol_JetEnUp;
-
-    T->Branch("Ut_JetEnUp", &Ut_JetEnUp, "Ut_JetEnUp/F");
-    T->Branch("Utr_JetEnUp", &Utr_JetEnUp, "Utr_JetEnUp/F");
-    T->Branch("Ucol_JetEnUp", &Ucol_JetEnUp, "Ucol_JetEnUp/F");
-
     Float_t Ut_JetEnDown;
     Float_t Utr_JetEnDown;
     Float_t Ucol_JetEnDown;
-    T->Branch("Ut_JetEnDown", &Ut_JetEnDown, "Ut_JetEnDown/F");
-    T->Branch("Utr_JetEnDown", &Utr_JetEnDown, "Utr_JetEnDown/F");
-    T->Branch("Ucol_JetEnDown", &Ucol_JetEnDown, "Ucol_JetEnDown/F");
-
     Float_t Ut_JetResDown;
     Float_t Utr_JetResDown;
     Float_t Ucol_JetResDown;
-    T->Branch("Ut_JetResDown", &Ut_JetResDown, "Ut_JetResDown/F");
-    T->Branch("Utr_JetResDown", &Utr_JetResDown, "Utr_JetResDown/F");
-    T->Branch("Ucol_JetResDown", &Ucol_JetResDown, "Ucol_JetResDown/F");
-
     Float_t Ut_JetResUp;
     Float_t Utr_JetResUp;
     Float_t Ucol_JetResUp;
-    T->Branch("Ut_JetResUp", &Ut_JetResUp, "Ut_JetResUp/F");
-    T->Branch("Utr_JetResUp", &Utr_JetResUp, "Utr_JetResUp/F");
-    T->Branch("Ucol_JetResUp", &Ucol_JetResUp, "Ucol_JetResUp/F");
-
     Float_t Ut_UnclusteredEnUp;
     Float_t Utr_UnclusteredEnUp;
     Float_t Ucol_UnclusteredEnUp;
-    T->Branch("Ut_UnclusteredEnUp", &Ut_UnclusteredEnUp, "Ut_UnclusteredEnUp/F");
-    T->Branch("Utr_UnclusteredEnUp", &Utr_UnclusteredEnUp, "Utr_UnclusteredEnUp/F");
-    T->Branch("Ucol_UnclusteredEnUp", &Ucol_UnclusteredEnUp, "Ucol_UnclusteredEnUp/F");
-
     Float_t Ut_UnclusteredEnDown;
     Float_t Utr_UnclusteredEnDown;
     Float_t Ucol_UnclusteredEnDown;
-    T->Branch("Ut_UnclusteredEnDown", &Ut_UnclusteredEnDown, "Ut_UnclusteredEnDown/F");
-    T->Branch("Utr_UnclusteredEnDown", &Utr_UnclusteredEnDown, "Utr_UnclusteredEnDown/F");
-    T->Branch("Ucol_UnclusteredEnDown", &Ucol_UnclusteredEnDown, "Ucol_UnclusteredEnDown/F");
-
     Float_t UtMC;
     Float_t UtrMC;
     Float_t UcolMC;
+
+
+    T->Branch("Ut", &Ut, "Ut/F");
+    T->Branch("Utr", &Utr, "Utr/F");
+    T->Branch("Ucol", &Ucol, "Ucol/F");
+    T->Branch("Ut_JetEnUp", &Ut_JetEnUp, "Ut_JetEnUp/F");
+    T->Branch("Utr_JetEnUp", &Utr_JetEnUp, "Utr_JetEnUp/F");
+    T->Branch("Ucol_JetEnUp", &Ucol_JetEnUp, "Ucol_JetEnUp/F");
+    T->Branch("Ut_JetEnDown", &Ut_JetEnDown, "Ut_JetEnDown/F");
+    T->Branch("Utr_JetEnDown", &Utr_JetEnDown, "Utr_JetEnDown/F");
+    T->Branch("Ucol_JetEnDown", &Ucol_JetEnDown, "Ucol_JetEnDown/F");
+    T->Branch("Ut_JetResDown", &Ut_JetResDown, "Ut_JetResDown/F");
+    T->Branch("Utr_JetResDown", &Utr_JetResDown, "Utr_JetResDown/F");
+    T->Branch("Ucol_JetResDown", &Ucol_JetResDown, "Ucol_JetResDown/F");
+    T->Branch("Ut_JetResUp", &Ut_JetResUp, "Ut_JetResUp/F");
+    T->Branch("Utr_JetResUp", &Utr_JetResUp, "Utr_JetResUp/F");
+    T->Branch("Ucol_JetResUp", &Ucol_JetResUp, "Ucol_JetResUp/F");
+    T->Branch("Ut_UnclusteredEnUp", &Ut_UnclusteredEnUp, "Ut_UnclusteredEnUp/F");
+    T->Branch("Utr_UnclusteredEnUp", &Utr_UnclusteredEnUp, "Utr_UnclusteredEnUp/F");
+    T->Branch("Ucol_UnclusteredEnUp", &Ucol_UnclusteredEnUp, "Ucol_UnclusteredEnUp/F");
+    T->Branch("Ut_UnclusteredEnDown", &Ut_UnclusteredEnDown, "Ut_UnclusteredEnDown/F");
+    T->Branch("Utr_UnclusteredEnDown", &Utr_UnclusteredEnDown, "Utr_UnclusteredEnDown/F");
+    T->Branch("Ucol_UnclusteredEnDown", &Ucol_UnclusteredEnDown, "Ucol_UnclusteredEnDown/F");
     T->Branch("UtMC", &UtMC, "UtMC/F");
     T->Branch("UtrMC", &UtrMC, "UtrMC/F");
     T->Branch("UcolMC", &UcolMC, "UcolMC/F");
@@ -1032,49 +972,43 @@ int main(int argc, char * argv[]) {
     Float_t Ut_puppi;
     Float_t Utr_puppi;
     Float_t Ucol_puppi;
-    T->Branch("Ut_puppi", &Ut_puppi, "Ut_puppi/F");
-    T->Branch("Utr_puppi", &Utr_puppi, "Utr_puppi/F");
-    T->Branch("Ucol_puppi", &Ucol_puppi, "Ucol_puppi/F");
-
-
     Float_t Ut_puppi_JetEnUp;
     Float_t Utr_puppi_JetEnUp;
     Float_t Ucol_puppi_JetEnUp;
-    T->Branch("Ut_puppi_JetEnUp", &Ut_puppi_JetEnUp, "Ut_puppi_JetEnUp/F");
-    T->Branch("Utr_puppi_JetEnUp", &Utr_puppi_JetEnUp, "Utr_puppi_JetEnUp/F");
-    T->Branch("Ucol_puppi_JetEnUp", &Ucol_puppi_JetEnUp, "Ucol_puppi_JetEnUp/F");
-
     Float_t Ut_puppi_JetEnDown;
     Float_t Utr_puppi_JetEnDown;
     Float_t Ucol_puppi_JetEnDown;
-    T->Branch("Ut_puppi_JetEnDown", &Ut_puppi_JetEnDown, "Ut_puppi_JetEnDown/F");
-    T->Branch("Utr_puppi_JetEnDown", &Utr_puppi_JetEnDown, "Utr_puppi_JetEnDown/F");
-    T->Branch("Ucol_puppi_JetEnDown", &Ucol_puppi_JetEnDown, "Ucol_puppi_JetEnDown/F");
-
     Float_t Ut_puppi_JetResDown;
     Float_t Utr_puppi_JetResDown;
     Float_t Ucol_puppi_JetResDown;
-    T->Branch("Ut_puppi_JetResDown", &Ut_puppi_JetResDown, "Ut_puppi_JetResDown/F");
-    T->Branch("Utr_puppi_JetResDown", &Utr_puppi_JetResDown, "Utr_puppi_JetResDown/F");
-    T->Branch("Ucol_puppi_JetResDown", &Ucol_puppi_JetResDown, "Ucol_puppi_JetResDown/F");
-
     Float_t Ut_puppi_JetResUp;
     Float_t Utr_puppi_JetResUp;
     Float_t Ucol_puppi_JetResUp;
-    T->Branch("Ut_puppi_JetResUp", &Ut_puppi_JetResUp, "Ut_puppi_JetResUp/F");
-    T->Branch("Utr_puppi_JetResUp", &Utr_puppi_JetResUp, "Utr_puppi_JetResUp/F");
-    T->Branch("Ucol_puppi_JetResUp", &Ucol_puppi_JetResUp, "Ucol_puppi_JetResUp/F");
-
     Float_t Ut_puppi_UnclusteredEnUp;
     Float_t Utr_puppi_UnclusteredEnUp;
     Float_t Ucol_puppi_UnclusteredEnUp;
-    T->Branch("Ut_puppi_UnclusteredEnUp", &Ut_puppi_UnclusteredEnUp, "Ut_puppi_UnclusteredEnUp/F");
-    T->Branch("Utr_puppi_UnclusteredEnUp", &Utr_puppi_UnclusteredEnUp, "Utr_puppi_UnclusteredEnUp/F");
-    T->Branch("Ucol_puppi_UnclusteredEnUp", &Ucol_puppi_UnclusteredEnUp, "Ucol_puppi_UnclusteredEnUp/F");
-
     Float_t Ut_puppi_UnclusteredEnDown;
     Float_t Utr_puppi_UnclusteredEnDown;
     Float_t Ucol_puppi_UnclusteredEnDown;
+
+    T->Branch("Ut_puppi", &Ut_puppi, "Ut_puppi/F");
+    T->Branch("Utr_puppi", &Utr_puppi, "Utr_puppi/F");
+    T->Branch("Ucol_puppi", &Ucol_puppi, "Ucol_puppi/F");
+    T->Branch("Ut_puppi_JetEnUp", &Ut_puppi_JetEnUp, "Ut_puppi_JetEnUp/F");
+    T->Branch("Utr_puppi_JetEnUp", &Utr_puppi_JetEnUp, "Utr_puppi_JetEnUp/F");
+    T->Branch("Ucol_puppi_JetEnUp", &Ucol_puppi_JetEnUp, "Ucol_puppi_JetEnUp/F");
+    T->Branch("Ut_puppi_JetEnDown", &Ut_puppi_JetEnDown, "Ut_puppi_JetEnDown/F");
+    T->Branch("Utr_puppi_JetEnDown", &Utr_puppi_JetEnDown, "Utr_puppi_JetEnDown/F");
+    T->Branch("Ucol_puppi_JetEnDown", &Ucol_puppi_JetEnDown, "Ucol_puppi_JetEnDown/F");
+    T->Branch("Ut_puppi_JetResDown", &Ut_puppi_JetResDown, "Ut_puppi_JetResDown/F");
+    T->Branch("Utr_puppi_JetResDown", &Utr_puppi_JetResDown, "Utr_puppi_JetResDown/F");
+    T->Branch("Ucol_puppi_JetResDown", &Ucol_puppi_JetResDown, "Ucol_puppi_JetResDown/F");
+    T->Branch("Ut_puppi_JetResUp", &Ut_puppi_JetResUp, "Ut_puppi_JetResUp/F");
+    T->Branch("Utr_puppi_JetResUp", &Utr_puppi_JetResUp, "Utr_puppi_JetResUp/F");
+    T->Branch("Ucol_puppi_JetResUp", &Ucol_puppi_JetResUp, "Ucol_puppi_JetResUp/F");
+    T->Branch("Ut_puppi_UnclusteredEnUp", &Ut_puppi_UnclusteredEnUp, "Ut_puppi_UnclusteredEnUp/F");
+    T->Branch("Utr_puppi_UnclusteredEnUp", &Utr_puppi_UnclusteredEnUp, "Utr_puppi_UnclusteredEnUp/F");
+    T->Branch("Ucol_puppi_UnclusteredEnUp", &Ucol_puppi_UnclusteredEnUp, "Ucol_puppi_UnclusteredEnUp/F");
     T->Branch("Ut_puppi_UnclusteredEnDown", &Ut_puppi_UnclusteredEnDown, "Ut_puppi_UnclusteredEnDown/F");
     T->Branch("Utr_puppi_UnclusteredEnDown", &Utr_puppi_UnclusteredEnDown, "Utr_puppi_UnclusteredEnDown/F");
     T->Branch("Ucol_puppi_UnclusteredEnDown", &Ucol_puppi_UnclusteredEnDown, "Ucol_puppi_UnclusteredEnDown/F");
@@ -1084,49 +1018,45 @@ int main(int argc, char * argv[]) {
     Float_t Ut_smeared;
     Float_t Utr_smeared;
     Float_t Ucol_smeared;
-    T->Branch("Ut_smeared", &Ut_smeared, "Ut_smeared/F");
-    T->Branch("Utr_smeared", &Utr_smeared, "Utr_smeared/F");
-    T->Branch("Ucol_smeared", &Ucol_smeared, "Ucol_smeared/F");
-
 
     Float_t Ut_smeared_JetEnUp;
     Float_t Utr_smeared_JetEnUp;
     Float_t Ucol_smeared_JetEnUp;
-    T->Branch("Ut_smeared_JetEnUp", &Ut_smeared_JetEnUp, "Ut_smeared_JetEnUp/F");
-    T->Branch("Utr_smeared_JetEnUp", &Utr_smeared_JetEnUp, "Utr_smeared_JetEnUp/F");
-    T->Branch("Ucol_smeared_JetEnUp", &Ucol_smeared_JetEnUp, "Ucol_smeared_JetEnUp/F");
-
     Float_t Ut_smeared_JetEnDown;
     Float_t Utr_smeared_JetEnDown;
     Float_t Ucol_smeared_JetEnDown;
-    T->Branch("Ut_smeared_JetEnDown", &Ut_smeared_JetEnDown, "Ut_smeared_JetEnDown/F");
-    T->Branch("Utr_smeared_JetEnDown", &Utr_smeared_JetEnDown, "Utr_smeared_JetEnDown/F");
-    T->Branch("Ucol_smeared_JetEnDown", &Ucol_smeared_JetEnDown, "Ucol_smeared_JetEnDown/F");
-
     Float_t Ut_smeared_JetResDown;
     Float_t Utr_smeared_JetResDown;
     Float_t Ucol_smeared_JetResDown;
-    T->Branch("Ut_smeared_JetResDown", &Ut_smeared_JetResDown, "Ut_smeared_JetResDown/F");
-    T->Branch("Utr_smeared_JetResDown", &Utr_smeared_JetResDown, "Utr_smeared_JetResDown/F");
-    T->Branch("Ucol_smeared_JetResDown", &Ucol_smeared_JetResDown, "Ucol_smeared_JetResDown/F");
-
     Float_t Ut_smeared_JetResUp;
     Float_t Utr_smeared_JetResUp;
     Float_t Ucol_smeared_JetResUp;
-    T->Branch("Ut_smeared_JetResUp", &Ut_smeared_JetResUp, "Ut_smeared_JetResUp/F");
-    T->Branch("Utr_smeared_JetResUp", &Utr_smeared_JetResUp, "Utr_smeared_JetResUp/F");
-    T->Branch("Ucol_smeared_JetResUp", &Ucol_smeared_JetResUp, "Ucol_smeared_JetResUp/F");
 
     Float_t Ut_smeared_UnclusteredEnUp;
     Float_t Utr_smeared_UnclusteredEnUp;
     Float_t Ucol_smeared_UnclusteredEnUp;
-    T->Branch("Ut_smeared_UnclusteredEnUp", &Ut_smeared_UnclusteredEnUp, "Ut_smeared_UnclusteredEnUp/F");
-    T->Branch("Utr_smeared_UnclusteredEnUp", &Utr_smeared_UnclusteredEnUp, "Utr_smeared_UnclusteredEnUp/F");
-    T->Branch("Ucol_smeared_UnclusteredEnUp", &Ucol_smeared_UnclusteredEnUp, "Ucol_smeared_UnclusteredEnUp/F");
-
     Float_t Ut_smeared_UnclusteredEnDown;
     Float_t Utr_smeared_UnclusteredEnDown;
     Float_t Ucol_smeared_UnclusteredEnDown;
+
+    T->Branch("Ut_smeared", &Ut_smeared, "Ut_smeared/F");
+    T->Branch("Utr_smeared", &Utr_smeared, "Utr_smeared/F");
+    T->Branch("Ucol_smeared", &Ucol_smeared, "Ucol_smeared/F");
+    T->Branch("Ut_smeared_JetEnUp", &Ut_smeared_JetEnUp, "Ut_smeared_JetEnUp/F");
+    T->Branch("Utr_smeared_JetEnUp", &Utr_smeared_JetEnUp, "Utr_smeared_JetEnUp/F");
+    T->Branch("Ucol_smeared_JetEnUp", &Ucol_smeared_JetEnUp, "Ucol_smeared_JetEnUp/F");
+    T->Branch("Ut_smeared_JetEnDown", &Ut_smeared_JetEnDown, "Ut_smeared_JetEnDown/F");
+    T->Branch("Utr_smeared_JetEnDown", &Utr_smeared_JetEnDown, "Utr_smeared_JetEnDown/F");
+    T->Branch("Ucol_smeared_JetEnDown", &Ucol_smeared_JetEnDown, "Ucol_smeared_JetEnDown/F");
+    T->Branch("Ut_smeared_JetResDown", &Ut_smeared_JetResDown, "Ut_smeared_JetResDown/F");
+    T->Branch("Utr_smeared_JetResDown", &Utr_smeared_JetResDown, "Utr_smeared_JetResDown/F");
+    T->Branch("Ucol_smeared_JetResDown", &Ucol_smeared_JetResDown, "Ucol_smeared_JetResDown/F");
+    T->Branch("Ut_smeared_JetResUp", &Ut_smeared_JetResUp, "Ut_smeared_JetResUp/F");
+    T->Branch("Utr_smeared_JetResUp", &Utr_smeared_JetResUp, "Utr_smeared_JetResUp/F");
+    T->Branch("Ucol_smeared_JetResUp", &Ucol_smeared_JetResUp, "Ucol_smeared_JetResUp/F");
+    T->Branch("Ut_smeared_UnclusteredEnUp", &Ut_smeared_UnclusteredEnUp, "Ut_smeared_UnclusteredEnUp/F");
+    T->Branch("Utr_smeared_UnclusteredEnUp", &Utr_smeared_UnclusteredEnUp, "Utr_smeared_UnclusteredEnUp/F");
+    T->Branch("Ucol_smeared_UnclusteredEnUp", &Ucol_smeared_UnclusteredEnUp, "Ucol_smeared_UnclusteredEnUp/F");
     T->Branch("Ut_smeared_UnclusteredEnDown", &Ut_smeared_UnclusteredEnDown, "Ut_smeared_UnclusteredEnDown/F");
     T->Branch("Utr_smeared_UnclusteredEnDown", &Utr_smeared_UnclusteredEnDown, "Utr_smeared_UnclusteredEnDown/F");
     T->Branch("Ucol_smeared_UnclusteredEnDown", &Ucol_smeared_UnclusteredEnDown, "Ucol_smeared_UnclusteredEnDown/F");
@@ -1181,18 +1111,18 @@ int main(int argc, char * argv[]) {
 
     Float_t rho = analysisTree.rho;
     // searching for btagging discriminant ========================================================================================================================
-     unsigned int nBTagDiscriminant1 = 0;
-     unsigned int nBTagDiscriminant2 = 0;
-     unsigned int nBTagDiscriminant3 = 0;
-     SearchForBtagDiscriminant(analysisTree, BTagDiscriminator1, BTagDiscriminator2, BTagDiscriminator3, nBTagDiscriminant1, nBTagDiscriminant2, nBTagDiscriminant3, era);
+    unsigned int nBTagDiscriminant1 = 0;
+    unsigned int nBTagDiscriminant2 = 0;
+    unsigned int nBTagDiscriminant3 = 0;
+    SearchForBtagDiscriminant(analysisTree, BTagDiscriminator1, BTagDiscriminator2, BTagDiscriminator3, nBTagDiscriminant1, nBTagDiscriminant2, nBTagDiscriminant3, era);
          
-  //JET Iteration and collection filling:
-  TLorentzVector metLV;
+    //JET Iteration and collection filling:
+    TLorentzVector metLV;
 
     float genweights=1.;
 
-	  TTree *genweightsTree = (TTree*)file_->Get("initroottree/AC1B");
-	  genweightsTree->SetBranchAddress("genweight",&genweights);
+    TTree *genweightsTree = (TTree*)file_->Get("initroottree/AC1B");
+    genweightsTree->SetBranchAddress("genweight",&genweights);
 
     if(!isData && WithInit) 
       {
@@ -1340,7 +1270,6 @@ int main(int argc, char * argv[]) {
             genweightsTree->GetEntry(iEntry);
             weight *= genweights;
             gen_weight *=genweights;
-//            std::cout <<"analysisTree.genweight "<< float(analysisTree.genweight) << std::endl;
             lumi=true;
       }
 
@@ -1389,8 +1318,7 @@ int main(int argc, char * argv[]) {
           //otree->zptweight = zptmassweight;
       }
       
-  }
-	
+    }
 
 	TLorentzVector genBosonLV; genBosonLV.SetXYZT(0,0,0,0);
 	TLorentzVector genVisBosonLV; genVisBosonLV.SetXYZT(0,0,0,0);
@@ -1398,10 +1326,6 @@ int main(int argc, char * argv[]) {
 	//Iterate over the gen particles and get the gen Boson:=============
 	for (unsigned int igen=0; igen < analysisTree.genparticles_count; ++igen) {
 		
-		  //cout<<analysisTree.genparticles_px[igen]<<endl;
-		  //cout<<analysisTree.genparticles_py[igen]<<endl;
-		  //cout<<analysisTree.genparticles_pz[igen]<<endl;
-		  //cout<<analysisTree.genparticles_e[igen]<<endl;
 		  TLorentzVector genLV; genLV.SetXYZT(analysisTree.genparticles_px[igen],
       		  				      analysisTree.genparticles_py[igen],
       						      analysisTree.genparticles_pz[igen],
@@ -1423,7 +1347,7 @@ int main(int argc, char * argv[]) {
                   //}
                }
                
-               if (abs(analysisTree.genparticles_pdgid[igen])==13) {
+          if (abs(analysisTree.genparticles_pdgid[igen])==13) {
                   isMuon = true;
                   //if (analysisTree.genparticles_fromHardProcess[igen]&&analysisTree.genparticles_status[igen]==1) {
                   //   promptMuons.push_back(genLV);
@@ -1456,8 +1380,6 @@ int main(int argc, char * argv[]) {
 	cout<<"zptmassweight"<<zptmassweight<<endl;
 
 	if (isDY) { 
-		cout<<"applying Z pt mass weights: "<<endl;
-		cout<<"bosonMass: "<<bosonMass<<endl;
 		if (bosonMass>50.0) {
 		float bosonMassX = bosonMass;
 		float bosonPtX = bosonPt;
@@ -1466,7 +1388,6 @@ int main(int argc, char * argv[]) {
 		if (bosonPtX>1000.)   bosonPtX = 1000.;
 		zptmassweight = histZMassPtWeights->GetBinContent(histZMassPtWeights->GetXaxis()->FindBin(bosonMassX),
 		histZMassPtWeights->GetYaxis()->FindBin(bosonPtX));
-		cout<<"zptmassweight"<<zptmassweight<<endl;
 		}
      	}
 	/*TODO ADD!!
@@ -1531,7 +1452,7 @@ int main(int argc, char * argv[]) {
 	    allRuns.push_back(analysisTree.event_run);
       if (!lumi) continue;
 	    std::vector<TString> metFlags; metFlags.clear();
-      //TODO Check MET Flags:
+      //TODO Check MET Flags for different years:
       metFlags.push_back("Flag_goodVertices");
       metFlags.push_back("Flag_globalSuperTightHalo2016Filter");
       metFlags.push_back("Flag_HBHENoiseFilter");
@@ -1548,16 +1469,13 @@ int main(int argc, char * argv[]) {
 
     if (!isData){
 	  if (applyPUreweighting)	 {
-	    //	  puweight = float(PUofficial->get_PUweight(double(analysisTree.numtruepileupinteractions)));
-		  pu_weight = float(PUofficial->get_PUweight(double(analysisTree.primvertex_count)));
-	    puweight = float((PU_data->GetBinContent(analysisTree.primvertex_count)/PU_data->GetSumOfWeights())/(PU_mc->GetBinContent(analysisTree.primvertex_count)/PU_mc->GetSumOfWeights()));
+        pu_weight = float(PUofficial->get_PUweight(double(analysisTree.primvertex_count)));
+        puweight = float((PU_data->GetBinContent(analysisTree.primvertex_count)/PU_data->GetSumOfWeights())/(PU_mc->GetBinContent(analysisTree.primvertex_count)/PU_mc->GetSumOfWeights()));
 	    if (pu_weight !=pu_weight) {
 		    pu_weight=1;
-		    //cout<<"bad pu for "<< analysisTree.primvertex_count<<"  " <<PU_data->GetBinContent(analysisTree.primvertex_count)<<"  "<<PU_mc->GetBinContent(analysisTree.primvertex_count)<<"  " << puweight<<endl;
 		    }
 	    if (pu_weight >10) {
 		    pu_weight=1;
-		    //cout<<"bad pu for "<< analysisTree.primvertex_count<<"  " <<PU_data->GetBinContent(analysisTree.primvertex_count)<<"  "<<PU_mc->GetBinContent(analysisTree.primvertex_count)<<"  " << puweight<<endl;
 		}
 
 	    weight *=pu_weight;
@@ -1565,14 +1483,9 @@ int main(int argc, char * argv[]) {
 
 	    if (pu_weight !=pu_weight) {
 	                               pu_weight=1;
-	                               //cout<<"bad pu for "<< analysisTree.primvertex_count<<endl;
-	                               //cout<<"" <<PU_data->GetBinContent(analysisTree.primvertex_count)<<"  "<<PU_mc->GetBinContent(analysisTree.primvertex_count)<<"  " << puweight<<endl;
 	    }
 	    if (pu_weight >10) {
 	                                pu_weight=1;
-	                                //cout<<"bad pu for "<< analysisTree.primvertex_count<<"  "
-	                                //<<PU_data->GetBinContent(analysisTree.primvertex_count)<<"  "
-	                                //<<PU_mc->GetBinContent(analysisTree.primvertex_count)<<"  " << puweight<<endl;
 	    }
 	    PUweight = pu_weight;
 	 }
@@ -1679,7 +1592,6 @@ int main(int argc, char * argv[]) {
             }
           }
     }
-
     if ((int)mu_index<0) continue;
 
     mu_relIso[0]=isoMuMin;
@@ -1689,7 +1601,6 @@ int main(int argc, char * argv[]) {
     bool  extramuon_veto = false;
     event_secondLeptonVeto = false;
     event_thirdLeptonVeto = false;
-
 
     //Looking for extra electron
     bool foundExtraElectron = false;
@@ -1818,8 +1729,8 @@ int main(int argc, char * argv[]) {
           }
     }
     event_secondLeptonVeto = dilepton_veto;
-	  if (extraelec_veto) continue;
-	  if (extramuon_veto) continue;
+	if (extraelec_veto) continue;
+	if (extramuon_veto) continue;
     if(extraelec_veto || extramuon_veto)   event_thirdLeptonVeto = true;
 
     // Trigger weight
@@ -2434,7 +2345,6 @@ int main(int argc, char * argv[]) {
         pfmet_ey_corr = analysisTree.pfmetcorr_ey;
 
         pfmet_phi_corr = calculate_dphi(pfmet_ex_corr, pfmet_ey_corr);
-        //TODO recalulate pt and phi
         pfmet_pt_corr = TMath::Sqrt(pfmet_ex_corr*pfmet_ex_corr + pfmet_ey_corr*pfmet_ey_corr);
 	
 
@@ -2473,22 +2383,123 @@ int main(int argc, char * argv[]) {
       pfmetcorr_ex_UnclusteredEnDown = analysisTree.pfmetcorr_ex_UnclusteredEnDown;
       pfmetcorr_ey_UnclusteredEnDown = analysisTree.pfmetcorr_ey_UnclusteredEnDown;
      
-        pfmet_phi_JetEnUp = calculate_dphi(pfmet_ex_JetResUp,pfmet_ey_JetResUp);
-   	pfmet_phi_JetEnDown = calculate_dphi(pfmet_ex_JetResDown,pfmet_ey_JetResDown);
-   	pfmet_phi_UnclusteredEnUp = calculate_dphi(pfmet_ex_UnclusteredEnUp,pfmet_ey_UnclusteredEnUp);
-   	pfmet_phi_UnclusteredEnDown = calculate_dphi(pfmet_ex_UnclusteredEnDown,pfmet_ey_UnclusteredEnDown);
-   	pfmet_phi_JetResUp = calculate_dphi(pfmet_ex_JetResUp,pfmet_ey_JetResUp);
-	pfmet_phi_JetResDown = calculate_dphi(pfmet_ex_JetResDown,pfmet_ey_JetResDown);
+    pfmet_phi_JetEnUp = calculate_dphi(pfmet_ex_JetResUp,   pfmet_ey_JetResUp);
+    pfmet_phi_JetEnDown = calculate_dphi(pfmet_ex_JetResDown,   pfmet_ey_JetResDown);
+    pfmet_phi_UnclusteredEnUp = calculate_dphi(pfmet_ex_UnclusteredEnUp,pfmet_ey_UnclusteredEnUp);
+    pfmet_phi_UnclusteredEnDown = calculate_dphi(pfmet_ex_UnclusteredEnDown,pfmet_ey_UnclusteredEnDown);
+    pfmet_phi_JetResUp = calculate_dphi(pfmet_ex_JetResUp,pfmet_ey_JetResUp);
+    pfmet_phi_JetResDown = calculate_dphi(pfmet_ex_JetResDown,pfmet_ey_JetResDown);
+
+    //Smeared MET:============================================================================================
+    pfmet_ex_corr_smeared = analysisTree.pfmetcorr_ex_smeared;
+    pfmet_ey_corr_smeared = analysisTree.pfmetcorr_ey_smeared;
+    pfmet_pt_corr_smeared = analysisTree.pfmetcorr_pt_smeared;
+    pfmet_phi_corr_smeared = analysisTree.pfmetcorr_phi_smeared;
 
 
+    if (!usePuppiMET){
+    met_x_recoilscaleUp = analysisTree.pfmetcorr_ex;
+    met_x_recoilscaleDown = analysisTree.pfmetcorr_ex;
 
-      //PuppiMET:===============================================================================================
+    met_y_recoilscaleUp = analysisTree.pfmetcorr_ey;
+    met_y_recoilscaleDown = analysisTree.pfmetcorr_ey;
+
+    met_x_recoilresoUp = analysisTree.pfmetcorr_ex;
+    met_x_recoilresoDown = analysisTree.pfmetcorr_ex;
+
+    met_y_recoilresoUp = analysisTree.pfmetcorr_ey;
+    met_y_recoilresoDown = analysisTree.pfmetcorr_ey;
+
+    met_unclMetUp_x    = analysisTree.pfmetcorr_ex_UnclusteredEnUp;
+    met_unclMetUp_y    = analysisTree.pfmetcorr_ey_UnclusteredEnUp;
+    met_unclMetDown_x  = analysisTree.pfmetcorr_ex_UnclusteredEnDown;
+    met_unclMetDown_y  = analysisTree.pfmetcorr_ey_UnclusteredEnDown;
+    }
+    else{
+    met_x_recoilscaleUp = analysisTree.puppimet_ex;
+    met_x_recoilscaleDown = analysisTree.puppimet_ex;
+    met_y_recoilscaleUp = analysisTree.puppimet_ey;
+    met_y_recoilscaleDown = analysisTree.puppimet_ey;
+    met_x_recoilresoUp = analysisTree.puppimet_ex;
+    met_x_recoilresoDown = analysisTree.puppimet_ex;
+    met_y_recoilresoUp = analysisTree.puppimet_ey;
+    met_y_recoilresoDown = analysisTree.puppimet_ey;
+
+    met_unclMetUp_x    = analysisTree.puppimet_ex_UnclusteredEnUp;
+    met_unclMetUp_y    = analysisTree.puppimet_ey_UnclusteredEnUp;
+    met_unclMetDown_x  = analysisTree.puppimet_ex_UnclusteredEnDown;
+    met_unclMetDown_y  = analysisTree.puppimet_ey_UnclusteredEnDown;
+    }
+
+    met = TMath::Sqrt(met_x*met_x + met_y*met_y);
+    float metphi = TMath::ATan2(met_y,met_x);
+
+    //MET Significance:============================================================================================:
+    if (!usePuppiMET){
+    float metcov00 = analysisTree.pfmetcorr_sigxx;
+    float metcov01 = analysisTree.pfmetcorr_sigxy;
+    float metcov10 = analysisTree.pfmetcorr_sigyx;
+    float metcov11 = analysisTree.pfmetcorr_sigyy;
+    }
+    else{
+    float metcov00 = analysisTree.puppimet_sigxx;
+    float metcov01 = analysisTree.puppimet_sigxy;
+    float metcov10 = analysisTree.puppimet_sigyx;
+    float metcov11 = analysisTree.puppimet_sigyy;
+    }
+
+    // Apply Simple Recoil Corrections===========================================:
+    int njetsforrecoil = njets;
+    if(isW) njetsforrecoil = njets + 1;
+
+    float met_uncorr = met;
+    float metphi_uncorr = metphi;
+    float pfmet_corr_x = analysisTree.pfmetcorr_ex;
+    float pfmet_corr_y = analysisTree.pfmetcorr_ey;
+
+    float pfmet_ex = analysisTree.pfmetcorr_ex;
+    float pfmet_ey = analysisTree.pfmetcorr_ey;
+
+    float puppimet_ex = analysisTree.puppimet_ex;
+    float puppimet_ey = analysisTree.puppimet_ey;
+
+
+        if ((isW||isDY) && !isData) {
+
+            if (applySimpleRecoilCorrections) {
+
+                  if (!usePuppiMET){
+                    recoilMetCorrector.CorrectByMeanResolution(pfmet_corr_x,pfmet_corr_y,bosonPx,bosonPy,lepPx,lepPy,njetsforrecoil,pfmet_corr_x,pfmet_corr_y);
+                    metSys.ApplyMEtSys(pfmet_corr_x, pfmet_corr_y, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Response, kit::MEtSys::SysShift::Up, met_x_recoilscaleUp, met_y_recoilscaleUp);
+                    metSys.ApplyMEtSys(pfmet_corr_x, pfmet_corr_y, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Response, kit::MEtSys::SysShift::Down, met_x_recoilscaleDown, met_y_recoilscaleDown);
+                    metSys.ApplyMEtSys(pfmet_corr_x, pfmet_corr_y, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Resolution, kit::MEtSys::SysShift::Up, met_x_recoilresoUp, met_y_recoilresoUp);
+                    metSys.ApplyMEtSys(pfmet_corr_x, pfmet_corr_y, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Resolution, kit::MEtSys::SysShift::Down, met_x_recoilresoDown, met_y_recoilresoDown);
+         
+	             pfmet_ex_corr = pfmet_corr_x;
+                pfmet_ey_corr = pfmet_corr_y;
+          }
+                   else{
+                      recoilMetCorrectorPuppi.CorrectByMeanResolution(puppimet_ex,puppimet_ey,bosonPx,bosonPy,lepPx,lepPy,njetsforrecoil,puppimet_ex, puppimet_ey);
+                      metSysPuppi.ApplyMEtSys(puppimet_ex, puppimet_ey, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Response, kit::MEtSys::SysShift::Up, met_x_recoilscaleUp, met_y_recoilscaleUp);
+                      metSysPuppi.ApplyMEtSys(puppimet_ex, puppimet_ey, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Response, kit::MEtSys::SysShift::Down, met_x_recoilscaleDown, met_y_recoilscaleDown);
+                      metSysPuppi.ApplyMEtSys(puppimet_ex, puppimet_ey, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Resolution, kit::MEtSys::SysShift::Up, met_x_recoilresoUp, met_y_recoilresoUp);
+                      metSysPuppi.ApplyMEtSys(puppimet_ex, puppimet_ey, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Resolution, kit::MEtSys::SysShift::Down, met_x_recoilresoDown, met_y_recoilresoDown);
+                   }
+                }
+                //todo check changes of the correction;
+        }
+
+       //TODO recalulate pt and phi
+       pfmet_pt_corr = TMath::Sqrt(pfmet_ex_corr*pfmet_ex_corr + pfmet_ey_corr*pfmet_ey_corr);
+       pfmet_phi_corr = calculate_dphi(pfmet_ex_corr, pfmet_ey_corr);
+
+      //PuppiMET:============================================================================:
       puppi_ex = analysisTree.puppimet_ex;
       puppi_ey = analysisTree.puppimet_ey;
       puppi_ez = 0;//analysisTree.pfmet_ez;
-      
-      puppi_pt = TMath::Sqrt(puppi_ex*puppi_ex+puppi_ey*puppi_ey);
-      puppi_phi = TMath::ATan2(puppi_ey,puppi_ex);//TODO Recalculate via function;
+
+      puppi_pt = TMath::Sqrt(puppimet_ex*puppimet_ex+puppimet_ey*puppimet_ey);
+      puppi_phi = calculate_dphi(puppimet_ey,puppimet_ex);//TODO Recalculate via function;
 
       puppi_ex_JetEnUp = analysisTree.puppimet_ex_JetEnUp;
       puppi_ey_JetEnUp = analysisTree.puppimet_ey_JetEnUp;
@@ -2529,178 +2540,68 @@ int main(int argc, char * argv[]) {
       puppi_pt_UnclusteredEnDown = TMath::Sqrt(puppi_ex_UnclusteredEnDown*puppi_ex_UnclusteredEnDown+
                                                puppi_ey_UnclusteredEnDown*puppi_ey_UnclusteredEnDown);
 
-      //Unc for the puppi met phi;
+     //Unc for the puppi met phi;
 
-      puppi_phi_JetEnUp = calculate_dphi(puppi_ex_JetEnUp,puppi_ey_JetEnUp);
+    puppi_phi_JetEnUp = calculate_dphi(puppi_ex_JetEnUp,puppi_ey_JetEnUp);
 
-      puppi_phi_JetEnDown = calculate_dphi(puppi_ex_JetEnDown,puppi_ey_JetEnDown);
+    puppi_phi_JetEnDown = calculate_dphi(puppi_ex_JetEnDown,puppi_ey_JetEnDown);
 
-      puppi_phi_JetResUp = calculate_dphi(puppi_ex_JetResUp,puppi_ey_JetResUp);
+    puppi_phi_JetResUp = calculate_dphi(puppi_ex_JetResUp,puppi_ey_JetResUp);
 
-      puppi_phi_JetResDown = calculate_dphi(puppi_ex_JetResDown,puppi_ey_JetResDown);
+    puppi_phi_JetResDown = calculate_dphi(puppi_ex_JetResDown,puppi_ey_JetResDown);
 
-      puppi_phi_UnclusteredEnUp = calculate_dphi(puppi_ex_UnclusteredEnUp, puppi_ey_UnclusteredEnUp);
+    puppi_phi_UnclusteredEnUp = calculate_dphi(puppi_ex_UnclusteredEnUp, puppi_ey_UnclusteredEnUp);
 
-      puppi_phi_UnclusteredEnDown = calculate_dphi(puppi_ex_UnclusteredEnDown,puppi_ey_UnclusteredEnDown);
+    puppi_phi_UnclusteredEnDown = calculate_dphi(puppi_ex_UnclusteredEnDown,puppi_ey_UnclusteredEnDown);
 
+    pfmetcorr_ex_JetEnUp = analysisTree.pfmetcorr_ex_JetEnUp;
+    pfmetcorr_ey_JetEnUp = analysisTree.pfmetcorr_ey_JetEnUp;
 
+    pfmetcorr_ex_JetEnDown = analysisTree.pfmetcorr_ex_JetEnDown;
+    pfmetcorr_ey_JetEnDown = analysisTree.pfmetcorr_ey_JetEnDown;
 
-      //Smeared MET:============================================================================================
-      pfmet_ex_corr_smeared = analysisTree.pfmetcorr_ex_smeared;
-      pfmet_ey_corr_smeared = analysisTree.pfmetcorr_ey_smeared;
-      pfmet_pt_corr_smeared = analysisTree.pfmetcorr_pt_smeared;
-      pfmet_phi_corr_smeared = analysisTree.pfmetcorr_phi_smeared;
+    pfmetcorr_ex_UnclusteredEnUp = analysisTree.pfmetcorr_ex_UnclusteredEnUp;
+    pfmetcorr_ey_UnclusteredEnUp = analysisTree.pfmetcorr_ey_UnclusteredEnUp;
 
+    pfmetcorr_ex_UnclusteredEnDown = analysisTree.pfmetcorr_ex_UnclusteredEnDown;
+    pfmetcorr_ey_UnclusteredEnDown = analysisTree.pfmetcorr_ey_UnclusteredEnDown;
 
-      if (!usePuppiMET){
-        met_x_recoilscaleUp = analysisTree.pfmetcorr_ex;
-        met_x_recoilscaleDown = analysisTree.pfmetcorr_ex;
+    pfmetcorr_ex_JetResUp = analysisTree.pfmetcorr_ex_JetResUp;
+    pfmetcorr_ey_JetResUp = analysisTree.pfmetcorr_ey_JetResUp;
 
-        met_y_recoilscaleUp = analysisTree.pfmetcorr_ey;
-        met_y_recoilscaleDown = analysisTree.pfmetcorr_ey;
-        
-        met_x_recoilresoUp = analysisTree.pfmetcorr_ex;
-        met_x_recoilresoDown = analysisTree.pfmetcorr_ex;
-        
-        met_y_recoilresoUp = analysisTree.pfmetcorr_ey;
-        met_y_recoilresoDown = analysisTree.pfmetcorr_ey;
+    pfmetcorr_ex_JetResDown = analysisTree.pfmetcorr_ex_JetResDown;
+    pfmetcorr_ey_JetResDown = analysisTree.pfmetcorr_ey_JetResDown;
 
-        met_unclMetUp_x    = analysisTree.pfmetcorr_ex_UnclusteredEnUp;
-        met_unclMetUp_y    = analysisTree.pfmetcorr_ey_UnclusteredEnUp;
-        met_unclMetDown_x  = analysisTree.pfmetcorr_ex_UnclusteredEnDown;
-        met_unclMetDown_y  = analysisTree.pfmetcorr_ey_UnclusteredEnDown;
-        }
-        else{
-        met_x_recoilscaleUp = analysisTree.puppimet_ex;
-        met_x_recoilscaleDown = analysisTree.puppimet_ex;
-        met_y_recoilscaleUp = analysisTree.puppimet_ey;
-        met_y_recoilscaleDown = analysisTree.puppimet_ey;
-        met_x_recoilresoUp = analysisTree.puppimet_ex;
-        met_x_recoilresoDown = analysisTree.puppimet_ex;
-        met_y_recoilresoUp = analysisTree.puppimet_ey;
-        met_y_recoilresoDown = analysisTree.puppimet_ey;
+    //=============================================================================//
+    pfmetcorr_pt_JetEnUp = TMath::Sqrt(pfmetcorr_ex_JetEnUp*pfmetcorr_ex_JetEnUp +
+                                       pfmetcorr_ey_JetEnUp*pfmetcorr_ey_JetEnUp);
 
-        met_unclMetUp_x    = analysisTree.puppimet_ex_UnclusteredEnUp;
-        met_unclMetUp_y    = analysisTree.puppimet_ey_UnclusteredEnUp;
-        met_unclMetDown_x  = analysisTree.puppimet_ex_UnclusteredEnDown;
-        met_unclMetDown_y  = analysisTree.puppimet_ey_UnclusteredEnDown;
-        }
-        met = TMath::Sqrt(met_x*met_x + met_y*met_y);
-        float metphi = TMath::ATan2(met_y,met_x);
+    pfmetcorr_pt_JetEnDown = TMath::Sqrt(pfmetcorr_ex_JetEnDown*pfmetcorr_ex_JetEnDown +
+                                         pfmetcorr_ey_JetEnDown*pfmetcorr_ey_JetEnDown);
 
-        //MET Significance:============================================================================================:
-        if (!usePuppiMET){
-        float metcov00 = analysisTree.pfmetcorr_sigxx;
-        float metcov01 = analysisTree.pfmetcorr_sigxy;
-        float metcov10 = analysisTree.pfmetcorr_sigyx;
-        float metcov11 = analysisTree.pfmetcorr_sigyy;
-        }
-        else{
-        float metcov00 = analysisTree.puppimet_sigxx;
-        float metcov01 = analysisTree.puppimet_sigxy;
-        float metcov10 = analysisTree.puppimet_sigyx;
-        float metcov11 = analysisTree.puppimet_sigyy;
-        }
+    pfmetcorr_pt_UnclusteredEnUp = TMath::Sqrt(pfmetcorr_ex_UnclusteredEnUp*pfmetcorr_ex_UnclusteredEnUp +
+                                               pfmetcorr_ey_UnclusteredEnUp*pfmetcorr_ey_UnclusteredEnUp);
 
-        // Apply Simple Recoil Corrections=============================================================================:
-        int njetsforrecoil = njets;
-        if(isW) njetsforrecoil = njets;// + 1;
+    pfmetcorr_pt_UnclusteredEnDown = TMath::Sqrt(pfmetcorr_ex_UnclusteredEnDown*pfmetcorr_ex_UnclusteredEnDown +
+                                                 pfmetcorr_ey_UnclusteredEnDown*pfmetcorr_ey_UnclusteredEnDown);
 
-        float met_uncorr = met;
-        float metphi_uncorr = metphi;
-        float pfmet_corr_x = analysisTree.pfmetcorr_ex;
-        float pfmet_corr_y = analysisTree.pfmetcorr_ey;
+    pfmetcorr_pt_JetResUp = TMath::Sqrt(pfmetcorr_ex_JetResUp*pfmetcorr_ex_JetResUp +
+                                        pfmetcorr_ey_JetResUp*pfmetcorr_ey_JetResUp);
 
-        float pfmet_ex = analysisTree.pfmetcorr_ex;
-        float pfmet_ey = analysisTree.pfmetcorr_ey;
+    pfmetcorr_pt_JetResDown = TMath::Sqrt(pfmetcorr_ex_JetResDown*pfmetcorr_ex_JetResDown +
+                                          pfmetcorr_ey_JetResDown*pfmetcorr_ey_JetResDown);
+    //Uncertainties for the MET Phi Corr:
+    pfmetcorr_phi_JetEnUp = calculate_dphi(pfmetcorr_ex_JetEnUp,pfmetcorr_ey_JetEnUp);
 
-        float puppimet_ex = analysisTree.puppimet_ex;
-        float puppimet_ey = analysisTree.puppimet_ey;
+    pfmetcorr_phi_JetEnDown = calculate_dphi(pfmetcorr_ex_JetEnDown, pfmetcorr_ey_JetEnDown);
 
+    pfmetcorr_phi_UnclusteredEnUp = calculate_dphi(pfmetcorr_ex_UnclusteredEnUp, pfmetcorr_ey_UnclusteredEnUp);
 
-        if ((isW||isDY) && !isData) {
+    pfmetcorr_phi_UnclusteredEnDown = calculate_dphi(pfmetcorr_ex_UnclusteredEnDown,pfmetcorr_ey_UnclusteredEnDown);
 
-            if (applySimpleRecoilCorrections) {
+    pfmetcorr_phi_JetResUp = calculate_dphi(pfmetcorr_ex_JetResUp, pfmetcorr_ey_JetResUp);
 
-                  if (!usePuppiMET){
-//              cout<<"pfmet_corr_x,pfmet_corr_y"<<pfmet_corr_x<<" "<<pfmet_corr_y<<endl;
-              recoilMetCorrector.CorrectByMeanResolution(pfmet_corr_x,pfmet_corr_y,bosonPx,bosonPy,lepPx,lepPy,njetsforrecoil,pfmet_corr_x,pfmet_corr_y);
-//              cout<<"pfmet_corr_x,pfmet_corr_y"<<pfmet_corr_x<<" "<<pfmet_corr_y<<endl;
-              metSys.ApplyMEtSys(pfmet_corr_x, pfmet_corr_y, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Response, kit::MEtSys::SysShift::Up, met_x_recoilscaleUp, met_y_recoilscaleUp);
-                      metSys.ApplyMEtSys(pfmet_corr_x, pfmet_corr_y, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Response, kit::MEtSys::SysShift::Down, met_x_recoilscaleDown, met_y_recoilscaleDown);
-                      metSys.ApplyMEtSys(pfmet_corr_x, pfmet_corr_y, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Resolution, kit::MEtSys::SysShift::Up, met_x_recoilresoUp, met_y_recoilresoUp);
-                      metSys.ApplyMEtSys(pfmet_corr_x, pfmet_corr_y, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Resolution, kit::MEtSys::SysShift::Down, met_x_recoilresoDown, met_y_recoilresoDown);
-         
-	             pfmet_ex_corr = pfmet_corr_x;
-                pfmet_ey_corr = pfmet_corr_y;
-          }
-                   else{
-                      recoilMetCorrectorPuppi.CorrectByMeanResolution(met_x,met_y,bosonPx,bosonPy,lepPx,lepPy,njetsforrecoil,puppimet_ex, puppimet_ey);
-                      metSysPuppi.ApplyMEtSys(pfmet_corr_x, pfmet_corr_y, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Response, kit::MEtSys::SysShift::Up, met_x_recoilscaleUp, met_y_recoilscaleUp);
-                      metSysPuppi.ApplyMEtSys(pfmet_corr_x, pfmet_corr_y, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Response, kit::MEtSys::SysShift::Down, met_x_recoilscaleDown, met_y_recoilscaleDown);
-                      metSysPuppi.ApplyMEtSys(pfmet_corr_x, pfmet_corr_y, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Resolution, kit::MEtSys::SysShift::Up, met_x_recoilresoUp, met_y_recoilresoUp);
-                      metSysPuppi.ApplyMEtSys(pfmet_corr_x, pfmet_corr_y, bosonPx, bosonPy, lepPx, lepPy, njetsforrecoil, kit::MEtSys::SysType::Resolution, kit::MEtSys::SysShift::Down, met_x_recoilresoDown, met_y_recoilresoDown);
-                   }
-                }
-                //todo check changes of the correction;
-        }
-       //TODO recalulate pt and phi
-       pfmet_pt_corr = TMath::Sqrt(pfmet_ex_corr*pfmet_ex_corr + pfmet_ey_corr*pfmet_ey_corr);
-       
-       pfmet_phi_corr = calculate_dphi(pfmet_ex_corr, pfmet_ey_corr);
-
-
-      //raw_dPhi=dPhiFrom2P( mu_px[0], mu_py[0], raw_pfmet_ex,  raw_pfmet_ey);
-      //raw_pfMT = TMath::Sqrt(2*mu_pt[0]*raw_pfmet_pt*(1-TMath::Cos(raw_dPhi)));
-
-        pfmetcorr_ex_JetEnUp = analysisTree.pfmetcorr_ex_JetEnUp;
-        pfmetcorr_ey_JetEnUp = analysisTree.pfmetcorr_ey_JetEnUp;
-
-        pfmetcorr_ex_JetEnDown = analysisTree.pfmetcorr_ex_JetEnDown;
-        pfmetcorr_ey_JetEnDown = analysisTree.pfmetcorr_ey_JetEnDown;
-
-        pfmetcorr_ex_UnclusteredEnUp = analysisTree.pfmetcorr_ex_UnclusteredEnUp;
-        pfmetcorr_ey_UnclusteredEnUp = analysisTree.pfmetcorr_ey_UnclusteredEnUp;
-
-        pfmetcorr_ex_UnclusteredEnDown = analysisTree.pfmetcorr_ex_UnclusteredEnDown;
-        pfmetcorr_ey_UnclusteredEnDown = analysisTree.pfmetcorr_ey_UnclusteredEnDown;
-
-        pfmetcorr_ex_JetResUp = analysisTree.pfmetcorr_ex_JetResUp;
-        pfmetcorr_ey_JetResUp = analysisTree.pfmetcorr_ey_JetResUp;
-
-        pfmetcorr_ex_JetResDown = analysisTree.pfmetcorr_ex_JetResDown;
-        pfmetcorr_ey_JetResDown = analysisTree.pfmetcorr_ey_JetResDown;
-
-        //=============================================================================//
-        pfmetcorr_pt_JetEnUp = TMath::Sqrt(pfmetcorr_ex_JetEnUp*pfmetcorr_ex_JetEnUp +
-                                           pfmetcorr_ey_JetEnUp*pfmetcorr_ey_JetEnUp);
-
-        pfmetcorr_pt_JetEnDown = TMath::Sqrt(pfmetcorr_ex_JetEnDown*pfmetcorr_ex_JetEnDown + 
-                                             pfmetcorr_ey_JetEnDown*pfmetcorr_ey_JetEnDown);
-
-        pfmetcorr_pt_UnclusteredEnUp = TMath::Sqrt(pfmetcorr_ex_UnclusteredEnUp*pfmetcorr_ex_UnclusteredEnUp +
-                                                   pfmetcorr_ey_UnclusteredEnUp*pfmetcorr_ey_UnclusteredEnUp);
-
-        pfmetcorr_pt_UnclusteredEnDown = TMath::Sqrt(pfmetcorr_ex_UnclusteredEnDown*pfmetcorr_ex_UnclusteredEnDown +
-                                                     pfmetcorr_ey_UnclusteredEnDown*pfmetcorr_ey_UnclusteredEnDown);
-
-        pfmetcorr_pt_JetResUp = TMath::Sqrt(pfmetcorr_ex_JetResUp*pfmetcorr_ex_JetResUp +
-                                            pfmetcorr_ey_JetResUp*pfmetcorr_ey_JetResUp);
-
-        pfmetcorr_pt_JetResDown = TMath::Sqrt(pfmetcorr_ex_JetResDown*pfmetcorr_ex_JetResDown + 
-                                              pfmetcorr_ey_JetResDown*pfmetcorr_ey_JetResDown);
-        //Uncertainties for the MET Phi Corr:
-        pfmetcorr_phi_JetEnUp = calculate_dphi(pfmetcorr_ex_JetEnUp,pfmetcorr_ey_JetEnUp);
-
-        pfmetcorr_phi_JetEnDown = calculate_dphi(pfmetcorr_ex_JetEnDown, pfmetcorr_ey_JetEnDown);
-
-        pfmetcorr_phi_UnclusteredEnUp = calculate_dphi(pfmetcorr_ex_UnclusteredEnUp, pfmetcorr_ey_UnclusteredEnUp);
-
-        pfmetcorr_phi_UnclusteredEnDown = calculate_dphi(pfmetcorr_ex_UnclusteredEnDown,pfmetcorr_ey_UnclusteredEnDown);
-
-        pfmetcorr_phi_JetResUp = calculate_dphi(pfmetcorr_ex_JetResUp, pfmetcorr_ey_JetResUp);
-
-        pfmetcorr_phi_JetResDown = calculate_dphi(pfmetcorr_ex_JetResDown, pfmetcorr_ey_JetResDown);
+    pfmetcorr_phi_JetResDown = calculate_dphi(pfmetcorr_ex_JetResDown, pfmetcorr_ey_JetResDown);
 
         //::+++:://
         // Uncertainties of the smeared MET:=====================================================================;
@@ -2774,10 +2675,9 @@ int main(int argc, char * argv[]) {
      //MT for XY Corrections:
      double dPhi;
      dPhi = dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY,  pfmet_ey_XY );
-	   pfMT_XY = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY*(1-TMath::Cos(dPhi)));
+     pfMT_XY = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY*(1-TMath::Cos(dPhi)));
 
     //Get the XY Uncertainties:
-    //1
 
     //1 JetEnUp
     METXY = METXYCorr_Met_MetPhi(pfmetcorr_pt_JetEnUp,
@@ -2795,15 +2695,17 @@ int main(int argc, char * argv[]) {
      //2 JetEnDow
      METXY = METXYCorr_Met_MetPhi(pfmetcorr_pt_JetEnDown,
                                   pfmetcorr_phi_JetEnDown,
-                                                           runnb,
-                                                           year,
-                                                           isMC,
-                                                           npv);
+                                   runnb,
+                                   year,
+                                   isMC,
+                                   npv);
+
      pfmet_ex_XY_JetEnDown = METXY.first;
      pfmet_ey_XY_JetEnDown = METXY.second;
      pfmet_pt_XY_JetEnDown = sqrt(pfmet_ex_XY_JetEnDown*pfmet_ex_XY_JetEnDown 
                                 + pfmet_ey_XY_JetEnDown*pfmet_ey_XY_JetEnDown);
      pfmet_phi_XY_JetEnDown = calculate_dphi(pfmet_ex_XY_JetEnDown, pfmet_ey_XY_JetEnDown);
+
      //3 UnclusteredEnUp
      METXY = METXYCorr_Met_MetPhi(pfmetcorr_pt_UnclusteredEnUp,
                                   pfmetcorr_phi_UnclusteredEnUp,
@@ -2819,11 +2721,12 @@ int main(int argc, char * argv[]) {
 
      //4 UnclusteredEnDown
      METXY = METXYCorr_Met_MetPhi(pfmetcorr_pt_UnclusteredEnDown,
-                                                           pfmetcorr_phi_UnclusteredEnDown,
-                                                           runnb,
-                                                           year,
-                                                           isMC,
-                                                           npv);
+                                   pfmetcorr_phi_UnclusteredEnDown,
+                                   runnb,
+                                   year,
+                                   isMC,
+                                   npv);
+
      pfmet_ex_XY_UnclusteredEnDown = METXY.first;
      pfmet_ey_XY_UnclusteredEnDown = METXY.second;
      pfmet_pt_XY_UnclusteredEnDown = sqrt(pfmet_ex_XY_UnclusteredEnDown*pfmet_ex_XY_UnclusteredEnDown 
@@ -2849,10 +2752,10 @@ int main(int argc, char * argv[]) {
      //6 JetResDown
      METXY = METXYCorr_Met_MetPhi(pfmetcorr_pt_JetResDown,
                                   pfmetcorr_phi_JetResDown,
-                                                           runnb,
-                                                           year,
-                                                           isMC,
-                                                           npv);
+                                   runnb,
+                                   year,
+                                   isMC,
+                                   npv);
      pfmet_ex_XY_JetResDown = METXY.first;
      pfmet_ey_XY_JetResDown = METXY.second;
 
@@ -2870,97 +2773,89 @@ int main(int argc, char * argv[]) {
 
      pfmet_ex_corr_XY = METXY.first;
      pfmet_ey_corr_XY = METXY.second;
-     pfmet_phi_corr_XY = calculate_dphi(pfmet_ex_corr_XY, pfmet_ey_corr_XY);
      pfmet_pt_corr_XY = sqrt(pfmet_ex_corr_XY*pfmet_ex_corr_XY + pfmet_ey_corr_XY*pfmet_ey_corr_XY);
+     pfmet_phi_corr_XY = calculate_dphi(pfmet_ex_corr_XY, pfmet_ey_corr_XY);
 
-    //Add MT XY;
 
     //MT Definition and calculation:===================================================================================:
 
      dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex,  pfmet_ey );
-	   pfMT = TMath::Sqrt(2*mu_pt[0]*pfmet_pt*(1-TMath::Cos(dPhi)));
+	 pfMT = TMath::Sqrt(2*mu_pt[0]*pfmet_pt*(1-TMath::Cos(dPhi)));
 
      dPhi=dPhiFrom2P( mu_px[0], mu_py[0], puppi_ex,  puppi_ey );
-	   puppiMT = TMath::Sqrt(2*mu_pt[0]*puppi_pt*(1-TMath::Cos(dPhi)));
+	 puppiMT = TMath::Sqrt(2*mu_pt[0]*puppi_pt*(1-TMath::Cos(dPhi)));
 
   	 dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_corr_smeared,  pfmet_ey_corr_smeared );
-	   MT_smeared = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_corr_smeared*(1-TMath::Cos(dPhi)));
+	 MT_smeared = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_corr_smeared*(1-TMath::Cos(dPhi)));
 
      dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_corr,  pfmet_ey_corr);
      pfMT_corr = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_corr*(1-TMath::Cos(dPhi)));
 
 
     //========================================================
-        dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY_JetEnUp,  pfmet_ey_XY_JetEnUp );
-        MT_XY_JetEnUp = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY_JetEnUp*(1-TMath::Cos(dPhi)));
+    dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY_JetEnUp,  pfmet_ey_XY_JetEnUp );
+    MT_XY_JetEnUp = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY_JetEnUp*(1-TMath::Cos(dPhi)));
 
-        dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY_JetEnDown,  pfmet_ey_XY_JetEnDown );
-        MT_XY_JetEnDown = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY_JetEnDown*(1-TMath::Cos(dPhi)));
+    dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY_JetEnDown,  pfmet_ey_XY_JetEnDown );
+    MT_XY_JetEnDown = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY_JetEnDown*(1-TMath::Cos(dPhi)));
 
-        dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY_UnclusteredEnUp,  pfmet_ey_XY_UnclusteredEnUp );
-        MT_XY_UnclusteredEnUp = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY_UnclusteredEnUp*(1-TMath::Cos(dPhi)));
+    dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY_UnclusteredEnUp,  pfmet_ey_XY_UnclusteredEnUp );
+    MT_XY_UnclusteredEnUp = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY_UnclusteredEnUp*(1-TMath::Cos(dPhi)));
 
-        dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY_UnclusteredEnDown,  pfmet_ey_XY_UnclusteredEnDown );
-        MT_XY_UnclusteredEnDown = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY_UnclusteredEnDown*(1-TMath::Cos(dPhi)));
+    dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY_UnclusteredEnDown,  pfmet_ey_XY_UnclusteredEnDown );
+    MT_XY_UnclusteredEnDown = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY_UnclusteredEnDown*(1-TMath::Cos(dPhi)));
 
-        dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY_JetResUp,  pfmet_ey_XY_JetResUp );
-        MT_XY_JetResUp = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY_JetResUp*(1-TMath::Cos(dPhi)));
+    dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY_JetResUp,  pfmet_ey_XY_JetResUp );
+    MT_XY_JetResUp = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY_JetResUp*(1-TMath::Cos(dPhi)));
 
-        dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY_JetResDown,  pfmet_ey_XY_JetResDown );
-        MT_XY_JetResDown = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY_JetResDown*(1-TMath::Cos(dPhi)));
+    dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmet_ex_XY_JetResDown,  pfmet_ey_XY_JetResDown );
+    MT_XY_JetResDown = TMath::Sqrt(2*mu_pt[0]*pfmet_pt_XY_JetResDown*(1-TMath::Cos(dPhi)));
 
-	//cout<<"MT_XY_JetEnUp  : "<<MT_XY_JetEnUp<<endl;
-	//cout<<"MT_XY_JetEnDown : "<<MT_XY_JetEnDown<<endl;
-	//cout<<"MT_XY_UnclusteredEnUp :  "<<MT_XY_UnclusteredEnUp<<endl;
-	//cout<<"MT_XY_UnclusteredEnDown  :  "<<MT_XY_UnclusteredEnDown<<endl;
-	//cout<<"MT_XY_JetResUp :  "<<MT_XY_JetResUp<<endl;
-	//cout<<"MT_XY_JetResDown  :  "<<MT_XY_JetResDown<<endl;
+    //==========================================================:
 
-
-
-    //=================================================================================================================:
-
-       float mu_unc = 0.3;
+   float mu_unc = 0.3;
 
   	dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmetcorr_ex_JetEnUp,  pfmetcorr_ey_JetEnUp );
 	MT_JetEnUp = TMath::Sqrt(2*mu_pt[0]*pfmetcorr_pt_JetEnUp*(1-TMath::Cos(dPhi)));
   	
-        dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmetcorr_ex_JetEnDown,  pfmetcorr_ey_JetEnDown );
+    dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmetcorr_ex_JetEnDown,  pfmetcorr_ey_JetEnDown );
   	MT_JetEnDown = TMath::Sqrt(2*mu_pt[0]*pfmetcorr_pt_JetEnDown*(1-TMath::Cos(dPhi)));
   	
-        dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmetcorr_ex_UnclusteredEnUp,  pfmetcorr_ey_UnclusteredEnUp );
+    dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmetcorr_ex_UnclusteredEnUp,  pfmetcorr_ey_UnclusteredEnUp );
   	MT_UnclusteredEnUp = TMath::Sqrt(2*mu_pt[0]*pfmetcorr_pt_UnclusteredEnUp*(1-TMath::Cos(dPhi)));
   	
-        dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmetcorr_ex_UnclusteredEnDown,  pfmetcorr_ey_UnclusteredEnDown );
+    dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmetcorr_ex_UnclusteredEnDown,  pfmetcorr_ey_UnclusteredEnDown );
   	MT_UnclusteredEnDown = TMath::Sqrt(2*mu_pt[0]*pfmetcorr_pt_UnclusteredEnDown*(1-TMath::Cos(dPhi)));
   	
-        dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmetcorr_ex_JetResUp,  pfmetcorr_ey_JetResUp );
+    dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmetcorr_ex_JetResUp,  pfmetcorr_ey_JetResUp );
   	MT_JetResUp = TMath::Sqrt(2*mu_pt[0]*pfmetcorr_pt_JetResUp*(1-TMath::Cos(dPhi)));
   	
-        dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmetcorr_ex_JetResDown,  pfmetcorr_ey_JetResDown );
+    dPhi=dPhiFrom2P( mu_px[0], mu_py[0], pfmetcorr_ex_JetResDown,  pfmetcorr_ey_JetResDown );
   	MT_JetResDown = TMath::Sqrt(2*mu_pt[0]*pfmetcorr_pt_JetResDown*(1-TMath::Cos(dPhi)));
+
     //=================================================================================================================:
 
 	dPhi=dPhiFrom2P( mu_px[0], mu_py[0], puppi_ex,  puppi_ey );
-        MTpuppi = TMath::Sqrt(2*mu_pt[0]*puppi_pt*(1-TMath::Cos(dPhi)));
+    MTpuppi = TMath::Sqrt(2*mu_pt[0]*puppi_pt*(1-TMath::Cos(dPhi)));
     
 	dPhi=dPhiFrom2P( mu_px[0], mu_py[0], puppi_ex_JetEnUp,  puppi_ey_JetEnUp );
-        MTpuppi_JetEnUp = TMath::Sqrt(2*mu_pt[0]*puppi_pt_JetEnUp*(1-TMath::Cos(dPhi)));
+    MTpuppi_JetEnUp = TMath::Sqrt(2*mu_pt[0]*puppi_pt_JetEnUp*(1-TMath::Cos(dPhi)));
     
 	dPhi=dPhiFrom2P( mu_px[0], mu_py[0], puppi_ex_JetEnDown,  puppi_ey_JetEnDown );
-    	MTpuppi_JetEnDown = TMath::Sqrt(2*mu_pt[0]*puppi_pt_JetEnDown*(1-TMath::Cos(dPhi)));
+    MTpuppi_JetEnDown = TMath::Sqrt(2*mu_pt[0]*puppi_pt_JetEnDown*(1-TMath::Cos(dPhi)));
     
 	dPhi=dPhiFrom2P( mu_px[0], mu_py[0], puppi_ex_UnclusteredEnUp,  puppi_ey_UnclusteredEnUp );
-        MTpuppi_UnclusteredEnUp = TMath::Sqrt(2*mu_pt[0]*puppi_pt_UnclusteredEnUp*(1-TMath::Cos(dPhi)));
+    MTpuppi_UnclusteredEnUp = TMath::Sqrt(2*mu_pt[0]*puppi_pt_UnclusteredEnUp*(1-TMath::Cos(dPhi)));
     
 	dPhi=dPhiFrom2P( mu_px[0], mu_py[0], puppi_ex_UnclusteredEnDown,  puppi_ey_UnclusteredEnDown );
-    	MTpuppi_UnclusteredEnDown = TMath::Sqrt(2*mu_pt[0]*puppi_pt_UnclusteredEnDown*(1-TMath::Cos(dPhi)));
+    MTpuppi_UnclusteredEnDown = TMath::Sqrt(2*mu_pt[0]*puppi_pt_UnclusteredEnDown*(1-TMath::Cos(dPhi)));
     
 	dPhi=dPhiFrom2P( mu_px[0], mu_py[0], puppi_ex_JetResUp,  puppi_ey_JetResUp );
    	MTpuppi_JetResUp = TMath::Sqrt(2*mu_pt[0]*puppi_pt_JetResUp*(1-TMath::Cos(dPhi)));
     
 	dPhi=dPhiFrom2P( mu_px[0], mu_py[0], puppi_ex_JetResDown,  puppi_ey_JetResDown );
-    	MTpuppi_JetResDown = TMath::Sqrt(2*mu_pt[0]*puppi_pt_JetResDown*(1-TMath::Cos(dPhi)));
+    MTpuppi_JetResDown = TMath::Sqrt(2*mu_pt[0]*puppi_pt_JetResDown*(1-TMath::Cos(dPhi)));
+
 	if  (TMath::IsNaN(MTpuppi_JetResDown)>0.5 || TMath::IsNaN(MTpuppi_JetResUp)>0.5){
 		cout<<"MTpuppi_JetResDown   "<<MTpuppi_JetResDown;
 		 cout<<"MTpuppi_JetResUp   "<<MTpuppi_JetResUp;
